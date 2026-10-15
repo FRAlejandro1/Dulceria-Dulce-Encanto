@@ -1,4 +1,4 @@
-name: CI
+﻿name: CI
 
 on:
   push:
@@ -30,7 +30,7 @@ jobs:
       - name: Instalar dependencias
         run: npm ci
 
-      - name: Analizar código
+      - name: Analizar cÃ³digo
         run: npm run lint
 
   type-check:
@@ -80,7 +80,7 @@ jobs:
           retention-days: 7
 
   build:
-    name: Compilación
+    name: CompilaciÃ³n
     runs-on: ubuntu-latest
     steps:
       - name: Obtener repositorio
@@ -107,7 +107,7 @@ jobs:
           retention-days: 7
 
   docker:
-    name: Validación Docker
+    name: ValidaciÃ³n Docker
     runs-on: ubuntu-latest
     steps:
       - name: Obtener repositorio
@@ -168,5 +168,7 @@ jobs:
           args: >-
             -Dsonar.projectKey=${{ vars.SONAR_PROJECT_KEY_DULCERIA }}
             -Dsonar.organization=${{ vars.SONAR_ORGANIZATION_DULCERIA }}
+            -Dsonar.branch.name=main
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN_DULCERIA }}
+
