@@ -150,6 +150,17 @@ jobs:
         with:
           name: api-coverage
           path: apps/api/coverage
+          
+      - name: Verificar configuración de SonarCloud
+        env:
+          SONAR_PROJECT_KEY: ${{ vars.SONAR_PROJECT_KEY_DULCERIA }}
+          SONAR_ORGANIZATION: ${{ vars.SONAR_ORGANIZATION_DULCERIA }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN_DULCERIA }}
+        shell: bash
+        run: |
+          test -n "$SONAR_PROJECT_KEY" && echo "Project key: configurado" || { echo "::error::Project key vacío"; exit 1; }
+          test -n "$SONAR_ORGANIZATION" && echo "Organization: configurada" || { echo "::error::Organization vacía"; exit 1; }
+          test -n "$SONAR_TOKEN" && echo "Token: configurado" || { echo "::error::Token vacío"; exit 1; }
 
       - name: Analizar con SonarCloud
         uses: SonarSource/sonarcloud-github-action@v3
