@@ -40,6 +40,7 @@ jobs:
 
   backend:
     name: Backend
+    needs: frontend
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -56,6 +57,7 @@ jobs:
 
   test-frontend:
     name: Frontend Unit Tests and Coverage
+    needs: backend
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -78,6 +80,7 @@ jobs:
 
   test-backend:
     name: Backend Unit Tests and Coverage
+    needs: test-frontend
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -100,6 +103,7 @@ jobs:
 
   integration:
     name: HTTP Integration Tests
+    needs: test-backend
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -110,18 +114,14 @@ jobs:
           cache: npm
 
       - run: npm ci
+
       - name: Test Express HTTP behavior
         run: npm run test --workspace @dulceria/api -- tests/app.test.ts
 
   docker:
     name: Docker
     if: github.ref == 'refs/heads/main'
-    needs:
-      - frontend
-      - backend
-      - test-frontend
-      - test-backend
-      - integration
+    needs: integration
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -138,12 +138,7 @@ jobs:
   sonarcloud:
     name: SonarCloud
     if: github.ref == 'refs/heads/main'
-    needs:
-      - frontend
-      - backend
-      - test-frontend
-      - test-backend
-      - integration
+    needs: docker
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
