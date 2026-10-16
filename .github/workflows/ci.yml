@@ -14,161 +14,36 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  lint:
-    name: ESLint
-    runs-on: ubuntu-latest
-    steps:
-      - name: Obtener repositorio
-        uses: actions/checkout@v4
+  frontend:
+    name: Frontend
+    if: github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/frontend.yml
 
-      - name: Configurar Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
-          cache: npm
+  backend:
+    name: Backend
+    if: github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/backend.yml
 
-      - name: Instalar dependencias
-        run: npm ci
-
-      - name: Analizar cÃ³digo
-        run: npm run lint
-
-  type-check:
-    name: TypeScript
-    runs-on: ubuntu-latest
-    steps:
-      - name: Obtener repositorio
-        uses: actions/checkout@v4
-
-      - name: Configurar Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-
-      - name: Instalar dependencias
-        run: npm ci
-
-      - name: Verificar tipos
-        run: npm run type-check
-
-  test-api:
-    name: Pruebas y cobertura API
-    runs-on: ubuntu-latest
-    steps:
-      - name: Obtener repositorio
-        uses: actions/checkout@v4
-
-      - name: Configurar Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-
-      - name: Instalar dependencias
-        run: npm ci
-
-      - name: Ejecutar pruebas con cobertura
-        run: npm run test:coverage
-
-      - name: Publicar informe LCOV
-        uses: actions/upload-artifact@v4
-        with:
-          name: api-coverage
-          path: apps/api/coverage/lcov.info
-          if-no-files-found: error
-          retention-days: 7
-
-  build:
-    name: CompilaciÃ³n
-    runs-on: ubuntu-latest
-    steps:
-      - name: Obtener repositorio
-        uses: actions/checkout@v4
-
-      - name: Configurar Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-
-      - name: Instalar dependencias
-        run: npm ci
-
-      - name: Compilar frontend y backend
-        run: npm run build
-
-      - name: Publicar frontend compilado
-        uses: actions/upload-artifact@v4
-        with:
-          name: web-dist
-          path: apps/web/dist/
-          if-no-files-found: error
-          retention-days: 7
+  unit-tests:
+    name: Automated tests
+    if: github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/unit-tests.yml
 
   docker:
-    name: ValidaciÃ³n Docker
-    runs-on: ubuntu-latest
-    steps:
-      - name: Obtener repositorio
-        uses: actions/checkout@v4
-
-      - name: Validar disponibilidad de Docker
-        run: docker --version
-
-      - name: Construir imagen frontend
-        run: docker build --target frontend -t dulceria-dulce-encanto-frontend:${{ github.sha }} .
-
-      - name: Construir imagen backend
-        run: docker build --target backend -t dulceria-dulce-encanto-backend:${{ github.sha }} .
+    name: Docker
+    needs:
+      - frontend
+      - backend
+      - unit-tests
+    if: github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/docker.yml
 
   sonarcloud:
     name: SonarCloud
-    runs-on: ubuntu-latest
     needs:
-      - lint
-      - type-check
-      - test-api
-      - build
-    steps:
-      - name: Obtener repositorio
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Configurar Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-
-      - name: Instalar dependencias
-        run: npm ci
-
-      - name: Descargar cobertura API
-        uses: actions/download-artifact@v4
-        with:
-          name: api-coverage
-          path: apps/api/coverage
-          
-      - name: Verificar configuración de SonarCloud
-        env:
-          SONAR_PROJECT_KEY: ${{ vars.SONAR_PROJECT_KEY_DULCERIA }}
-          SONAR_ORGANIZATION: ${{ vars.SONAR_ORGANIZATION_DULCERIA }}
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN_DULCERIA }}
-        shell: bash
-        run: |
-          test -n "$SONAR_PROJECT_KEY" && echo "Project key: configurado" || { echo "::error::Project key vacío"; exit 1; }
-          test -n "$SONAR_ORGANIZATION" && echo "Organization: configurada" || { echo "::error::Organization vacía"; exit 1; }
-          test -n "$SONAR_TOKEN" && echo "Token: configurado" || { echo "::error::Token vacío"; exit 1; }
-
-      - name: Analizar con SonarCloud
-        uses: SonarSource/sonarcloud-github-action@v3
-        with:
-          args: >-
-            -Dsonar.projectKey=${{ vars.SONAR_PROJECT_KEY_DULCERIA }}
-            -Dsonar.organization=${{ vars.SONAR_ORGANIZATION_DULCERIA }}
-            -Dsonar.branch.name=main
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN_DULCERIA }}
-
+      - frontend
+      - backend
+      - unit-tests
+    if: github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/sonarcloud.yml
+    secrets: inherit

@@ -1,0 +1,20 @@
+﻿name: Docker
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  build-images:
+    name: Build frontend and backend images
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check Docker
+        run: docker --version
+      - name: Build frontend image
+        run: docker build --target frontend -t dulceria-dulce-encanto-frontend:${{ github.sha }} .
+      - name: Build backend image
+        run: docker build --target backend -t dulceria-dulce-encanto-backend:${{ github.sha }} .
