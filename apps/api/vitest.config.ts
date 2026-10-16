@@ -8,6 +8,7 @@ export default defineConfig({
       provider: 'v8',
       include: [
         'src/app.ts',
+        'src/server.ts',
         'src/config/auth.ts',
         'src/config/database.ts',
         'src/modules/audit/audit.repository.ts',
