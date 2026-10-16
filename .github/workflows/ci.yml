@@ -16,28 +16,102 @@ concurrency:
 jobs:
   frontend:
     name: Frontend
-    if: github.ref == 'refs/heads/main'
-    uses: ./.github/workflows/frontend.yml
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+      - run: npm run lint:web
+      - run: npm run type-check:web
+      - run: npm run build:web
+
+      - name: Upload frontend build
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-dist
+          path: apps/web/dist/
+          if-no-files-found: error
+          retention-days: 7
 
   backend:
     name: Backend
-    if: github.ref == 'refs/heads/main'
-    uses: ./.github/workflows/backend.yml
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+      - run: npm run lint:api
+      - run: npm run type-check:api
+      - run: npm run build:api
 
   test-frontend:
-    name: Frontend Unit Tests
-    if: github.ref == 'refs/heads/main'
-    uses: ./.github/workflows/test-frontend.yml
+    name: Frontend Unit Tests and Coverage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+      - run: npm run test:coverage --workspace @dulceria/web
+
+      - name: Upload frontend coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-coverage
+          path: apps/web/coverage/lcov.info
+          if-no-files-found: error
+          retention-days: 7
 
   test-backend:
     name: Backend Unit Tests and Coverage
-    if: github.ref == 'refs/heads/main'
-    uses: ./.github/workflows/test-backend.yml
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+      - run: npm run test:coverage --workspace @dulceria/api
+
+      - name: Upload backend coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-coverage
+          path: apps/api/coverage/lcov.info
+          if-no-files-found: error
+          retention-days: 7
 
   integration:
     name: HTTP Integration Tests
-    if: github.ref == 'refs/heads/main'
-    uses: ./.github/workflows/test-integration.yml
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+      - name: Test Express HTTP behavior
+        run: npm run test --workspace @dulceria/api -- tests/app.test.ts
 
   docker:
     name: Docker
@@ -47,7 +121,6 @@ jobs:
       - test-frontend
       - test-backend
       - integration
-    if: github.ref == 'refs/heads/main'
     uses: ./.github/workflows/docker.yml
 
   sonarcloud:
@@ -58,6 +131,5 @@ jobs:
       - test-frontend
       - test-backend
       - integration
-    if: github.ref == 'refs/heads/main'
     uses: ./.github/workflows/sonarcloud.yml
     secrets: inherit
