@@ -1,6 +1,9 @@
 ﻿import 'dotenv/config';
 
+import { validarConfiguracionBaseDatos } from './config/database.js';
 import { crearAplicacion } from './app.js';
+
+validarConfiguracionBaseDatos();
 
 const app = crearAplicacion();
 const puerto = Number(process.env.PORT ?? 3000);

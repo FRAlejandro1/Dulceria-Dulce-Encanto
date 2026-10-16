@@ -3,6 +3,8 @@ import cors from 'cors';
 import express, { type Express } from 'express';
 import helmet from 'helmet';
 
+import { manejarError } from './shared/http/error-handler.js';
+
 export function crearAplicacion(): Express {
   const app = express();
   const origenWeb = process.env.WEB_ORIGIN ?? 'http://localhost:5173';
@@ -19,6 +21,14 @@ export function crearAplicacion(): Express {
   app.get('/api/v1/health', (_req, res) => {
     res.status(200).json({ status: 'ok' });
   });
+
+  app.use((_req, res) => {
+    res.status(404).json({
+      error: 'Recurso no encontrado',
+    });
+  });
+
+  app.use(manejarError);
 
   return app;
 }
