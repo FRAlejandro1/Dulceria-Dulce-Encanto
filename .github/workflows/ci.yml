@@ -1,4 +1,4 @@
-﻿name: CI
+name: CI
 
 on:
   push:
@@ -24,17 +24,29 @@ jobs:
     if: github.ref == 'refs/heads/main'
     uses: ./.github/workflows/backend.yml
 
-  unit-tests:
-    name: Automated tests
+  test-frontend:
+    name: Frontend Unit Tests
     if: github.ref == 'refs/heads/main'
-    uses: ./.github/workflows/unit-tests.yml
+    uses: ./.github/workflows/test-frontend.yml
+
+  test-backend:
+    name: Backend Unit Tests and Coverage
+    if: github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/test-backend.yml
+
+  integration:
+    name: HTTP Integration Tests
+    if: github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/test-integration.yml
 
   docker:
     name: Docker
     needs:
       - frontend
       - backend
-      - unit-tests
+      - test-frontend
+      - test-backend
+      - integration
     if: github.ref == 'refs/heads/main'
     uses: ./.github/workflows/docker.yml
 
@@ -43,7 +55,9 @@ jobs:
     needs:
       - frontend
       - backend
-      - unit-tests
+      - test-frontend
+      - test-backend
+      - integration
     if: github.ref == 'refs/heads/main'
     uses: ./.github/workflows/sonarcloud.yml
     secrets: inherit

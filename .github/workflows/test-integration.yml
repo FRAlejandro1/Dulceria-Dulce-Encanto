@@ -1,0 +1,24 @@
+name: Integration Tests
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  integration:
+    name: HTTP Integration Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      - name: Test Express HTTP behavior
+        run: npm run test --workspace @dulceria/api -- tests/app.test.ts
