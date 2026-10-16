@@ -1,6 +1,6 @@
 ﻿import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { registrarError } from '../src/shared/logging/logger.js';
+import { registrarError, registrarInfo } from '../src/shared/logging/logger.js';
 
 describe('registrarError', () => {
   afterEach(() => {
@@ -80,5 +80,75 @@ describe('registrarError', () => {
 
     expect(registro.error).toEqual({ name: 'UnknownError' });
     expect(salida).not.toContain('valor-confidencial');
+  });
+});
+
+describe('serialización segura del logger', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('reemplaza nombres de error con caracteres no permitidos', () => {
+    const escritura = vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
+    const error = new Error('contenido privado');
+
+    Object.defineProperty(error, 'name', { value: 'Error!Interno' });
+
+    registrarError('security.test', error);
+
+    const registro = JSON.parse(String(escritura.mock.calls[0]?.[0])) as {
+      error: Record<string, unknown>;
+    };
+
+    expect(registro.error).toEqual({ name: 'Error' });
+    expect(String(escritura.mock.calls[0]?.[0])).not.toContain('contenido privado');
+  });
+
+  it.each([
+    ['codigo_en_minusculas', undefined],
+    ['ER-DUP-ENTRY', undefined],
+    ['A'.repeat(65), undefined],
+    [123, undefined],
+  ])('omite códigos técnicos que no cumplen el formato permitido: %s', (codigo) => {
+    const escritura = vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
+    const error = Object.assign(new Error('dato privado'), { code: codigo });
+
+    registrarError('database.test', error);
+
+    const registro = JSON.parse(String(escritura.mock.calls[0]?.[0])) as {
+      error: Record<string, unknown>;
+    };
+
+    expect(registro.error).toEqual({ name: 'Error' });
+  });
+
+  it('registra información con contexto explícito', () => {
+    const escritura = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
+
+    registrarInfo('application.started', { port: 3000 });
+
+    const registro = JSON.parse(String(escritura.mock.calls[0]?.[0])) as {
+      level: string;
+      event: string;
+      context: Record<string, unknown>;
+      timestamp: string;
+    };
+
+    expect(registro.level).toBe('info');
+    expect(registro.event).toBe('application.started');
+    expect(registro.context).toEqual({ port: 3000 });
+    expect(Number.isNaN(Date.parse(registro.timestamp))).toBe(false);
+  });
+
+  it('registra información con contexto vacío cuando se omite', () => {
+    const escritura = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
+
+    registrarInfo('application.ready');
+
+    const registro = JSON.parse(String(escritura.mock.calls[0]?.[0])) as {
+      context: Record<string, unknown>;
+    };
+
+    expect(registro.context).toEqual({});
   });
 });

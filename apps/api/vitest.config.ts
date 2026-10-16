@@ -9,6 +9,11 @@ export default defineConfig({
       include: [
         'src/app.ts',
         'src/config/auth.ts',
+        'src/config/database.ts',
+        'src/modules/audit/audit.repository.ts',
+        'src/shared/database/transaction.ts',
+        'src/shared/http/error-handler.ts',
+        'src/shared/logging/logger.ts',
         'src/shared/security/password.ts',
         'src/shared/security/jwt.ts',
       ],
