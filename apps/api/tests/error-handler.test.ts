@@ -2,6 +2,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { manejarError } from '../src/shared/http/error-handler.js';
+import { ErrorAplicacion } from '../src/shared/http/app-error.js';
 
 function crearRespuesta(headersSent = false) {
   const res = {
@@ -36,6 +37,27 @@ describe('manejarError', () => {
     expect(next).toHaveBeenCalledWith(error);
     expect(res.status).not.toHaveBeenCalled();
     expect(res.json).not.toHaveBeenCalled();
+  });
+
+  it('publica el estado y mensaje de un error de aplicación', () => {
+    vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
+    const res = crearRespuesta();
+    const error = new ErrorAplicacion(
+      409,
+      'Ya existe una cuenta con ese correo electrónico',
+    );
+
+    manejarError(
+      error,
+      { method: 'POST', path: '/api/v1/users' } as Request,
+      res as unknown as Response,
+      vi.fn() as NextFunction,
+    );
+
+    expect(res.status).toHaveBeenCalledWith(409);
+    expect(res.json).toHaveBeenCalledWith({
+      error: 'Ya existe una cuenta con ese correo electrónico',
+    });
   });
 
   it.each([
