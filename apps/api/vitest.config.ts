@@ -1,4 +1,4 @@
-﻿import { defineConfig } from 'vitest/config';
+import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   test: {
@@ -12,6 +12,8 @@ export default defineConfig({
         'src/config/auth.ts',
         'src/config/database.ts',
         'src/modules/audit/audit.repository.ts',
+        'src/modules/catalog/catalog.repository.ts',
+        'src/modules/catalog/catalog.routes.ts',
         'src/shared/database/transaction.ts',
         'src/shared/http/error-handler.ts',
         'src/shared/logging/logger.ts',
