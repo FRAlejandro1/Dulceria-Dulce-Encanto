@@ -18,7 +18,7 @@ export default defineConfig({
       provider: 'v8',
       include: ['src/App.tsx', 'src/main.tsx'],
       reportsDirectory: './coverage',
-      reporter: ['text', 'lcov'],
+      reporter: ['text', 'lcov', 'json'],
       thresholds: {
         statements: 95,
         branches: 95,

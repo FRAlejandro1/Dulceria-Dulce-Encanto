@@ -16,11 +16,13 @@ function crearFila(overrides: Record<string, unknown> = {}) {
   return {
     producto_id: '1',
     producto_nombre: 'Alfajores artesanales',
+    producto_imagen_url: 'https://example.com/producto.jpg',
     descripcion: 'Rellenos de dulce de leche',
     categoria_nombre: 'Tradicionales',
     categoria_slug: 'tradicionales',
     variante_id: '10',
     variante_nombre: 'Caja de 6',
+    variante_imagen_url: 'https://example.com/variante.jpg',
     sku: 'ALF-006',
     precio: '3.50',
     stock_disponible: 8,
@@ -70,6 +72,7 @@ describe('listarProductosCatalogo', () => {
         id: '1',
         nombre: 'Alfajores artesanales',
         descripcion: 'Rellenos de dulce de leche',
+        imagenUrl: 'https://example.com/producto.jpg',
         categoria: {
           nombre: 'Tradicionales',
           slug: 'tradicionales',
@@ -80,6 +83,7 @@ describe('listarProductosCatalogo', () => {
             nombre: 'Caja de 6',
             sku: 'ALF-006',
             precio: '3.50',
+            imagenUrl: 'https://example.com/variante.jpg',
             stockDisponible: 8,
           },
           {
@@ -87,6 +91,7 @@ describe('listarProductosCatalogo', () => {
             nombre: 'Caja de 12',
             sku: 'ALF-012',
             precio: '6.50',
+            imagenUrl: 'https://example.com/variante.jpg',
             stockDisponible: 4,
           },
         ],
@@ -176,6 +181,24 @@ describe('listarProductosCatalogo', () => {
     expect(sql).toContain('ORDER BY precio_referencia DESC, p.name ASC');
   });
 
+  it('conserva las imágenes nulas de productos y variantes', async () => {
+    ejecutarConsulta.mockResolvedValueOnce([
+      [
+        crearFila({
+          producto_imagen_url: null,
+          variante_imagen_url: null,
+        }),
+      ],
+      [],
+    ]);
+
+    const productos = await listarProductosCatalogo();
+
+    expect(productos[0]).toMatchObject({
+      imagenUrl: null,
+      variantes: [{ imagenUrl: null }],
+    });
+  });
   it('propaga los errores de consulta', async () => {
     const error = new Error('Fallo de consulta');
     ejecutarConsulta.mockRejectedValueOnce(error);
@@ -183,3 +206,5 @@ describe('listarProductosCatalogo', () => {
     await expect(listarProductosCatalogo()).rejects.toBe(error);
   });
 });
+
+

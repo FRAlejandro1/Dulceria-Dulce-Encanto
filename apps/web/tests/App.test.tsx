@@ -377,31 +377,26 @@ describe('Catálogo de Dulce Encanto', () => {
     ).toBeNull()
   })
 
-  it('abre y cierra el perfil y muestra el aviso de inicio de sesión', async () => {
+
+  it('abre y cierra el diálogo de autenticación desde el perfil', async () => {
     render(<App />)
     await esperarCatalogo()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Abrir perfil' }))
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Abrir perfil' }),
+    )
+
+    expect(await screen.findByRole('dialog')).toBeTruthy()
 
     expect(
-      screen.getByText(
-        'Inicia sesión para acceder a tu perfil y guardar tus favoritos.',
-      ),
+      screen.getByRole('heading', { name: 'Bienvenido de nuevo' }),
     ).toBeTruthy()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Iniciar sesión' }))
-    expect(
-      screen.getByText(/El inicio de sesión se conectará con la API/),
-    ).toBeTruthy()
+    fireEvent.click(
+      screen.getByRole('button', { name: /Cerrar autenticación/i }),
+    )
 
-    fireEvent.click(screen.getByRole('button', { name: 'Cerrar aviso' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Abrir perfil' }))
-
-    expect(
-      screen.queryByText(
-        'Inicia sesión para acceder a tu perfil y guardar tus favoritos.',
-      ),
-    ).toBeNull()
+    expect(screen.queryByRole('dialog')).toBeNull()
   })
 
   it('alterna entre modo oscuro y modo claro', async () => {

@@ -1,67 +1,19 @@
-import { useEffect, useMemo, useState } from 'react'
+
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import './App.css'
+import { validarAdicionCarrito } from './utils/carrito.utils'
+import type {
+  EstadoCarga,
+  Producto,
+  RespuestaCatalogo,
+  Variante,
+} from './types/catalogo.types'
+import type { UsuarioAutenticado } from './modules/auth/types/auth.types'
 
-type Variante = {
-  id: string
-  nombre: string
-  sku: string
-  precio: string
-  stockDisponible: number
-}
-
-type Producto = {
-  id: string
-  nombre: string
-  descripcion: string | null
-  categoria: {
-    nombre: string
-    slug: string
-  }
-  variantes: Variante[]
-}
-
-type RespuestaCatalogo = {
-  productos: Producto[]
-}
-
-type EstadoCarga = 'cargando' | 'correcto' | 'error'
-
-const IMAGENES_PRODUCTOS: Array<{ coincide: RegExp; url: string }> = [
-  {
-    coincide: /alfajor/i,
-    url: 'https://images.unsplash.com/photo-1558961363-fa8fdf82db35?auto=format&fit=crop&w=700&q=85',
-  },
-  {
-    coincide: /galleta.*chisp|chisp.*galleta/i,
-    url: 'https://images.unsplash.com/photo-1499636136210-6f4ee915583e?auto=format&fit=crop&w=700&q=85',
-  },
-  {
-    coincide: /torta|pastel|cake/i,
-    url: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&w=700&q=85',
-  },
-  {
-    coincide: /cupcake|vainilla/i,
-    url: 'https://images.unsplash.com/photo-1486427944299-d1955d23e34d?auto=format&fit=crop&w=700&q=85',
-  },
-  {
-    coincide: /galleta|mantequilla/i,
-    url: 'https://images.unsplash.com/photo-1490474418585-ba9bad8fd0ea?auto=format&fit=crop&w=700&q=85',
-  },
-  {
-    coincide: /bocadito|dulce/i,
-    url: 'https://images.unsplash.com/photo-1481391319762-47dff72954d9?auto=format&fit=crop&w=700&q=85',
-  },
-]
+const Auth = lazy(() => import('./modules/auth/Auth'))
 
 const IMAGEN_POR_DEFECTO =
   'https://images.unsplash.com/photo-1558961363-fa8fdf82db35?auto=format&fit=crop&w=700&q=85'
-
-function obtenerImagen(nombre: string): string {
-  return (
-    IMAGENES_PRODUCTOS.find((imagen) => imagen.coincide.test(nombre))?.url ??
-    IMAGEN_POR_DEFECTO
-  )
-}
 
 function obtenerPrecio(variante: Variante): number {
   const precio = Number(variante.precio)
@@ -72,16 +24,6 @@ function obtenerPrecioMinimo(producto: Producto): number {
   if (producto.variantes.length === 0) return Number.POSITIVE_INFINITY
 
   return Math.min(...producto.variantes.map(obtenerPrecio))
-}
-
-export function validarAdicionCarrito(
-  variante: Variante | undefined,
-  cantidadActual: number,
-): string | null {
-  if (!variante) return 'Este producto no tiene variantes disponibles.'
-  if (variante.stockDisponible <= 0) return 'Esta variante no tiene existencias disponibles.'
-  if (cantidadActual >= variante.stockDisponible) return 'No puedes agregar más unidades que las disponibles en stock.'
-  return null
 }
 
 function App() {
@@ -101,6 +43,9 @@ function App() {
     'ninguno' | 'notificaciones' | 'perfil'
   >('ninguno')
   const [aviso, setAviso] = useState('')
+
+  const [usuario, setUsuario] = useState<UsuarioAutenticado | null>(null)
+  const [authAbierta, setAuthAbierta] = useState(false)
 
   useEffect(() => {
     const controlador = new AbortController()
@@ -126,7 +71,9 @@ function App() {
           !('productos' in datos) ||
           !Array.isArray((datos as RespuestaCatalogo).productos)
         ) {
-          throw new Error('La respuesta del catálogo no tiene el formato esperado.')
+          throw new Error(
+            'La respuesta del catálogo no tiene el formato esperado.',
+          )
         }
 
         const catalogo = (datos as RespuestaCatalogo).productos.filter(
@@ -205,7 +152,29 @@ function App() {
     0,
   )
 
-  function obtenerVarianteSeleccionada(producto: Producto): Variante | undefined {
+  function abrirAutenticacion() {
+    setPanel('ninguno')
+    setAuthAbierta(true)
+  }
+
+  function cerrarAutenticacion() {
+    setAuthAbierta(false)
+  }
+
+  function manejarAutenticacion(usuarioAutenticado: UsuarioAutenticado) {
+    setUsuario(usuarioAutenticado)
+    setAuthAbierta(false)
+    setAviso(`Sesión iniciada como ${usuarioAutenticado.nombre}.`)
+  }
+
+  function manejarCierreSesion() {
+    setUsuario(null)
+    setAviso('Has cerrado sesión. Tus favoritos y carrito siguen siendo temporales.')
+  }
+
+  function obtenerVarianteSeleccionada(
+    producto: Producto,
+  ): Variante | undefined {
     const idSeleccionado = variantesSeleccionadas[producto.id]
 
     return (
@@ -238,8 +207,23 @@ function App() {
       ...actual,
       [variante.id]: (actual[variante.id] ?? 0) + 1,
     }))
+
     setAviso(`${producto.nombre} se añadió al carrito.`)
   }
+
+  function manejarAccesoCarrito() {
+    if (cantidadCarrito === 0) {
+      setAviso('Tu carrito está vacío.')
+      return
+    }
+
+    setAviso(
+      `Tienes ${cantidadCarrito} producto${
+        cantidadCarrito === 1 ? '' : 's'
+      } en tu carrito. El proceso de compra todavía no está disponible.`,
+    )
+  }
+
   function restablecerFiltros() {
     setBusqueda('')
     setCategoria('Todos')
@@ -265,6 +249,7 @@ function App() {
           >
             Inicio
           </a>
+
           <a
             className="main-nav__item"
             href="#productos"
@@ -275,6 +260,7 @@ function App() {
           >
             Ofertas
           </a>
+
           <a
             className="main-nav__item"
             href="#productos"
@@ -282,6 +268,7 @@ function App() {
           >
             Productos
           </a>
+
           <button
             className={
               verFavoritos
@@ -314,13 +301,7 @@ function App() {
           <button
             className="icon-button cart-button"
             aria-label={`Carrito, ${cantidadCarrito} productos`}
-            onClick={() =>
-              setAviso(
-                cantidadCarrito > 0
-                  ? `Tienes ${cantidadCarrito} producto(s) en el carrito.`
-                  : 'Tu carrito está vacío.',
-              )
-            }
+            onClick={manejarAccesoCarrito}
           >
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path d="M3 4h2l2.2 11.2a2 2 0 0 0 2 1.6h7.9a2 2 0 0 0 1.9-1.4L21 8H6M10 21h.01M18 21h.01" />
@@ -332,7 +313,9 @@ function App() {
 
           <button
             className="icon-button theme-button"
-            aria-label={temaOscuro ? 'Activar modo claro' : 'Activar modo oscuro'}
+            aria-label={
+              temaOscuro ? 'Activar modo claro' : 'Activar modo oscuro'
+            }
             onClick={() => setTemaOscuro((actual) => !actual)}
           >
             {temaOscuro ? '☀' : '☾'}
@@ -340,13 +323,15 @@ function App() {
 
           <button
             className="profile-button"
-            onClick={() =>
-              setPanel((actual) => (actual === 'perfil' ? 'ninguno' : 'perfil'))
-            }
+            onClick={abrirAutenticacion}
             aria-label="Abrir perfil"
           >
-            <span className="profile-button__avatar">U</span>
-            <span className="profile-button__label">Mi cuenta</span>
+            <span className="profile-button__avatar">
+              {usuario?.nombre.charAt(0).toLocaleUpperCase('es') ?? 'U'}
+            </span>
+            <span className="profile-button__label">
+              {usuario?.nombre ?? 'Mi cuenta'}
+            </span>
             <span aria-hidden="true">⌄</span>
           </button>
         </div>
@@ -361,29 +346,47 @@ function App() {
           >
             ×
           </button>
+
           <h2 className="floating-panel__title">
             {panel === 'notificaciones' ? 'Notificaciones' : 'Mi cuenta'}
           </h2>
+
           {panel === 'notificaciones' ? (
             <p>No tienes notificaciones nuevas.</p>
           ) : (
             <>
               <p>
-                Inicia sesión para acceder a tu perfil y guardar tus favoritos.
+                {usuario
+                  ? `Has iniciado sesión como ${usuario.nombre}.`
+                  : 'Inicia sesión para acceder a tu cuenta. Tus favoritos y carrito se gestionan temporalmente en este navegador.'}
               </p>
               <button
                 className="floating-panel__action"
-                onClick={() =>
-                  setAviso(
-                    'El inicio de sesión se conectará con la API en la siguiente fase.',
-                  )
-                }
+                onClick={abrirAutenticacion}
               >
-                Iniciar sesión
+                {usuario ? 'Ver mi cuenta' : 'Iniciar sesión'}
               </button>
             </>
           )}
         </section>
+      )}
+
+      {authAbierta && (
+        <Suspense
+          fallback={
+            <div className="toast" role="status">
+              Cargando acceso…
+            </div>
+          }
+        >
+          <Auth
+            open={authAbierta}
+            usuario={usuario}
+            onClose={cerrarAutenticacion}
+            onAuthenticated={manejarAutenticacion}
+            onLogout={manejarCierreSesion}
+          />
+        </Suspense>
       )}
 
       <section className="catalog" id="inicio">
@@ -399,17 +402,22 @@ function App() {
                 : 'Pequeños detalles que convierten cualquier día en algo especial.'}
             </p>
           </div>
+
           <span className="catalog-decoration" aria-hidden="true">
             ♡
           </span>
         </div>
 
-        <section className="catalog-toolbar" aria-label="Buscar y filtrar productos">
+        <section
+          className="catalog-toolbar"
+          aria-label="Buscar y filtrar productos"
+        >
           <div className="search-box">
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <circle cx="10.8" cy="10.8" r="6.8" />
               <path d="m16 16 5 5" />
             </svg>
+
             <input
               aria-label="Buscar productos"
               placeholder="¿Qué se te antoja hoy?"
@@ -479,11 +487,14 @@ function App() {
           >
             {productosVisibles.map((producto) => {
               const variante = obtenerVarianteSeleccionada(producto)
-              const precio = obtenerPrecio(variante!)
+
+              if (!variante) return null
+
+              const precio = obtenerPrecio(variante)
               const favorito = favoritos.includes(producto.id)
-              const stock = variante!.stockDisponible
-              const cantidadEnCarrito = carrito[variante!.id] ?? 0
-              const sinStock = !variante || stock <= 0
+              const stock = variante.stockDisponible
+              const cantidadEnCarrito = carrito[variante.id] ?? 0
+              const sinStock = stock <= 0
               const limiteAlcanzado = cantidadEnCarrito >= stock
 
               return (
@@ -491,10 +502,11 @@ function App() {
                   <div className="product-card__visual">
                     <img
                       className="product-card__image"
-                      src={obtenerImagen(producto.nombre)}
+                      src={producto.imagenUrl ?? IMAGEN_POR_DEFECTO}
                       alt={producto.nombre}
                       loading="lazy"
                     />
+
                     <button
                       className={
                         favorito
@@ -517,9 +529,12 @@ function App() {
                     <p className="product-card__category">
                       {producto.categoria.nombre}
                     </p>
+
                     <h2 className="product-card__name">{producto.nombre}</h2>
+
                     <p className="product-card__description">
-                      {producto.descripcion || 'Un dulce preparado para disfrutar.'}
+                      {producto.descripcion ||
+                        'Un dulce preparado para disfrutar.'}
                     </p>
 
                     {producto.variantes.length > 1 && (
@@ -527,7 +542,7 @@ function App() {
                         Presentación
                         <select
                           aria-label={`Presentación de ${producto.nombre}`}
-                          value={variante!.id}
+                          value={variante.id}
                           onChange={(evento) =>
                             setVariantesSeleccionadas((actual) => ({
                               ...actual,
@@ -537,7 +552,8 @@ function App() {
                         >
                           {producto.variantes.map((opcion) => (
                             <option key={opcion.id} value={opcion.id}>
-                              {opcion.nombre} — ${obtenerPrecio(opcion).toFixed(2)}
+                              {opcion.nombre} — $
+                              {obtenerPrecio(opcion).toFixed(2)}
                               {' · Stock: '}
                               {opcion.stockDisponible}
                             </option>
@@ -546,16 +562,15 @@ function App() {
                       </label>
                     )}
 
-                    {variante && (
-                      <p className="product-card__stock">
-                        {stock > 0 ? `${stock} disponibles` : 'Agotado'}
-                      </p>
-                    )}
+                    <p className="product-card__stock">
+                      {stock > 0 ? `${stock} disponibles` : 'Agotado'}
+                    </p>
 
                     <div className="product-card__bottom">
                       <strong className="product-card__price">
                         ${precio.toFixed(2)}
                       </strong>
+
                       <button
                         className="product-card__add"
                         onClick={() => agregarAlCarrito(producto)}
@@ -584,17 +599,23 @@ function App() {
             <span className="empty-state__icon" aria-hidden="true">
               ♡
             </span>
+
             <h2>
               {verFavoritos && favoritos.length === 0
                 ? 'Aún no tienes favoritos'
                 : 'No encontramos productos'}
             </h2>
+
             <p>
               {verFavoritos && favoritos.length === 0
                 ? 'Guarda productos con el corazón para encontrarlos aquí.'
                 : 'Prueba con otra búsqueda o categoría.'}
             </p>
-            <button className="empty-state__reset" onClick={restablecerFiltros}>
+
+            <button
+              className="empty-state__reset"
+              onClick={restablecerFiltros}
+            >
               Ver todos los productos
             </button>
           </div>
@@ -603,7 +624,8 @@ function App() {
         <p className="demo-notice">
           Los productos, precios y existencias se consultan desde el catálogo
           de la tienda. Las imágenes se asignan en el frontend porque la API
-          actual no incluye ese campo.
+          actual no incluye ese campo. Los favoritos y el carrito son
+          temporales y no se guardan en el servidor.
         </p>
       </section>
 
@@ -630,3 +652,4 @@ function App() {
 }
 
 export default App
+

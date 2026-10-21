@@ -11,11 +11,13 @@ export interface FiltrosCatalogo {
 interface FilaCatalogo extends RowDataPacket {
   producto_id: string;
   producto_nombre: string;
+  producto_imagen_url: string | null;
   descripcion: string | null;
   categoria_nombre: string;
   categoria_slug: string;
   variante_id: string;
   variante_nombre: string;
+  variante_imagen_url: string | null;
   sku: string;
   precio: string;
   stock_disponible: number;
@@ -26,6 +28,7 @@ export interface VarianteCatalogo {
   nombre: string;
   sku: string;
   precio: string;
+  imagenUrl: string | null;
   stockDisponible: number;
 }
 
@@ -33,6 +36,7 @@ export interface ProductoCatalogo {
   id: string;
   nombre: string;
   descripcion: string | null;
+  imagenUrl: string | null;
   categoria: {
     nombre: string;
     slug: string;
@@ -69,11 +73,13 @@ export async function listarProductosCatalogo(
     `SELECT
       CAST(p.id AS CHAR) AS producto_id,
       p.name AS producto_nombre,
+      p.image_url AS producto_imagen_url,
       p.description AS descripcion,
       c.name AS categoria_nombre,
       c.slug AS categoria_slug,
       CAST(pv.id AS CHAR) AS variante_id,
       pv.name AS variante_nombre,
+      pv.image_url AS variante_imagen_url,
       pv.sku AS sku,
       CAST(pv.price AS CHAR) AS precio,
       COALESCE(i.stock_on_hand - i.stock_reserved, 0) AS stock_disponible,
@@ -97,6 +103,7 @@ export async function listarProductosCatalogo(
         id: fila.producto_id,
         nombre: fila.producto_nombre,
         descripcion: fila.descripcion,
+        imagenUrl: fila.producto_imagen_url,
         categoria: {
           nombre: fila.categoria_nombre,
           slug: fila.categoria_slug,
@@ -112,6 +119,7 @@ export async function listarProductosCatalogo(
       nombre: fila.variante_nombre,
       sku: fila.sku,
       precio: fila.precio,
+      imagenUrl: fila.variante_imagen_url,
       stockDisponible: Number(fila.stock_disponible),
     });
   }
