@@ -1,4 +1,4 @@
-﻿import type {
+import type {
   Pool,
   PoolConnection,
   ResultSetHeader,
@@ -6,12 +6,12 @@
 } from 'mysql2/promise';
 
 import { pool } from '../../config/database.js';
+import {
+  esRolUsuario,
+  type RolUsuario,
+} from '../../shared/security/roles.js';
 
-/**
- * Roles admitidos por la base de datos.
- * Deben mantenerse sincronizados con chk_users_role.
- */
-export type RolUsuario = 'CLIENTE' | 'ADMIN';
+export type { RolUsuario } from '../../shared/security/roles.js';
 
 /**
  * Datos internos de una cuenta.
@@ -37,7 +37,7 @@ interface FilaUsuario extends RowDataPacket {
   nombre: string;
   correo: string;
   hash_contrasena: string;
-  rol: RolUsuario;
+  rol: unknown;
   activo: number;
 }
 
@@ -51,6 +51,10 @@ type EjecutorSql = Pool | PoolConnection;
 function convertirFilaUsuario(
   fila: FilaUsuario,
 ): UsuarioAutenticacion {
+  if (!esRolUsuario(fila.rol)) {
+    throw new Error('El rol del usuario recuperado no es válido');
+  }
+
   return {
     id: fila.id,
     nombre: fila.nombre,

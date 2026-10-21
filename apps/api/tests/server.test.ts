@@ -1,6 +1,7 @@
-﻿import { beforeEach, describe, expect, it, vi } from 'vitest';
+﻿
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const validarConfiguracionAutenticacion = vi.fn();
+const validarConfiguracionCsrf = vi.fn();
 const validarConfiguracionBaseDatos = vi.fn();
 const listen = vi.fn();
 const crearAplicacion = vi.fn(() => ({ listen }));
@@ -14,7 +15,7 @@ describe('punto de entrada server.ts', () => {
 
     vi.doMock('dotenv/config', () => ({}));
     vi.doMock('../src/config/auth.js', () => ({
-      validarConfiguracionAutenticacion,
+      validarConfiguracionCsrf,
     }));
     vi.doMock('../src/config/database.js', () => ({
       validarConfiguracionBaseDatos,
@@ -25,12 +26,14 @@ describe('punto de entrada server.ts', () => {
   });
 
   it('usa el puerto 3000 por defecto y valida la configuración', async () => {
-    const informacion = vi.spyOn(console, 'info').mockImplementation(() => {});
+    const informacion = vi
+      .spyOn(console, 'info')
+      .mockImplementation(() => {});
 
     await import('../src/server.js');
 
     expect(validarConfiguracionBaseDatos).toHaveBeenCalledOnce();
-    expect(validarConfiguracionAutenticacion).toHaveBeenCalledOnce();
+    expect(validarConfiguracionCsrf).toHaveBeenCalledOnce();
     expect(crearAplicacion).toHaveBeenCalledOnce();
     expect(listen).toHaveBeenCalledWith(3000, expect.any(Function));
 
@@ -42,7 +45,7 @@ describe('punto de entrada server.ts', () => {
     );
   });
 
-  it('acepta un puerto configurado valido', async () => {
+  it('acepta un puerto configurado válido', async () => {
     vi.stubEnv('PORT', '4000');
 
     await import('../src/server.js');
@@ -50,19 +53,16 @@ describe('punto de entrada server.ts', () => {
     expect(listen).toHaveBeenCalledWith(4000, expect.any(Function));
   });
 
-  it.each([
-    '',
-    'abc',
-    '3000.5',
-    '0',
-    '70000',
-  ])('rechaza el puerto invalido %s', async (puerto) => {
-    vi.stubEnv('PORT', puerto);
+  it.each(['', 'abc', '3000.5', '0', '70000'])(
+    'rechaza el puerto inválido %s',
+    async (puerto) => {
+      vi.stubEnv('PORT', puerto);
 
-    await expect(import('../src/server.js')).rejects.toThrow(
-      /PORT debe ser un puerto TCP v.lido entre 1 y 65535/,
-    );
+      await expect(import('../src/server.js')).rejects.toThrow(
+        /PORT debe ser un puerto TCP v.lido entre 1 y 65535/,
+      );
 
-    expect(listen).not.toHaveBeenCalled();
-  });
+      expect(listen).not.toHaveBeenCalled();
+    },
+  );
 });

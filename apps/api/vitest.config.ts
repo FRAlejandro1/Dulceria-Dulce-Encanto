@@ -1,4 +1,4 @@
-import { defineConfig } from 'vitest/config';
+﻿import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   test: {
@@ -12,6 +12,10 @@ export default defineConfig({
         'src/config/auth.ts',
         'src/config/database.ts',
         'src/modules/audit/audit.repository.ts',
+        'src/modules/auth/auth.routes.ts',
+        'src/modules/auth/auth.schemas.ts',
+        'src/modules/auth/auth.service.ts',
+        'src/modules/auth/sessions.repository.ts',
         'src/modules/catalog/catalog.repository.ts',
         'src/modules/catalog/catalog.routes.ts',
         'src/modules/users/users.repository.ts',
@@ -24,14 +28,19 @@ export default defineConfig({
         'src/shared/logging/logger.ts',
         'src/shared/security/password.ts',
         'src/shared/security/jwt.ts',
+        'src/shared/security/roles.ts',
+        'src/shared/security/authentication.middleware.ts',
+        'src/shared/security/authorization.middleware.ts',
+        'src/shared/security/csrf.ts',
+        'src/shared/security/session-token.ts',
       ],
       reportsDirectory: './coverage',
       reporter: ['text', 'lcov'],
       thresholds: {
-        statements: 95,
-        branches: 95,
-        functions: 95,
-        lines: 95,
+        statements: 100,
+        branches: 100,
+        functions: 100,
+        lines: 100,
       },
     },
   },

@@ -105,6 +105,18 @@ describe('buscarUsuarioPorCorreo', () => {
       buscarUsuarioPorCorreo('cliente@example.com'),
     ).rejects.toBe(error);
   });
+  it('rechaza una fila con un rol desconocido', async () => {
+    ejecutarConsulta.mockResolvedValueOnce([
+      [crearFilaUsuario({ rol: 'SUPERADMIN' })],
+      [],
+    ]);
+
+    await expect(
+      buscarUsuarioPorCorreo('cliente@example.com'),
+    ).rejects.toThrow(
+      'El rol del usuario recuperado no es válido',
+    );
+  });
 });
 
 describe('buscarUsuarioPorId', () => {
@@ -144,6 +156,18 @@ describe('buscarUsuarioPorId', () => {
     await expect(
       buscarUsuarioPorId('15'),
     ).rejects.toBe(error);
+  });
+  it('rechaza una fila con un rol desconocido', async () => {
+    ejecutarConsulta.mockResolvedValueOnce([
+      [crearFilaUsuario({ rol: 'ROL_INVALIDO' })],
+      [],
+    ]);
+
+    await expect(
+      buscarUsuarioPorId('15'),
+    ).rejects.toThrow(
+      'El rol del usuario recuperado no es válido',
+    );
   });
 });
 

@@ -3,6 +3,7 @@ import cors from 'cors';
 import express, { type Express } from 'express';
 import helmet from 'helmet';
 
+import { autenticacionRouter } from './modules/auth/auth.routes.js';
 import { catalogoRouter } from './modules/catalog/catalog.routes.js';
 import { usuariosRouter } from './modules/users/users.routes.js';
 import { manejarError } from './shared/http/error-handler.js';
@@ -19,6 +20,7 @@ export function crearAplicacion(): Express {
   }));
   app.use(express.json({ limit: '1mb' }));
   app.use(cookieParser());
+  app.use('/api/v1/auth', autenticacionRouter);
   app.use('/api/v1/catalog', catalogoRouter);
   app.use('/api/v1/users', usuariosRouter);
 
