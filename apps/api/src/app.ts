@@ -1,8 +1,11 @@
-﻿import cookieParser from 'cookie-parser';
+import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import express, { type Express } from 'express';
 import helmet from 'helmet';
 
+import { autenticacionRouter } from './modules/auth/auth.routes.js';
+import { catalogoRouter } from './modules/catalog/catalog.routes.js';
+import { usuariosRouter } from './modules/users/users.routes.js';
 import { manejarError } from './shared/http/error-handler.js';
 
 export function crearAplicacion(): Express {
@@ -17,6 +20,9 @@ export function crearAplicacion(): Express {
   }));
   app.use(express.json({ limit: '1mb' }));
   app.use(cookieParser());
+  app.use('/api/v1/auth', autenticacionRouter);
+  app.use('/api/v1/catalog', catalogoRouter);
+  app.use('/api/v1/users', usuariosRouter);
 
   app.get('/api/v1/health', (_req, res) => {
     res.status(200).json({ status: 'ok' });

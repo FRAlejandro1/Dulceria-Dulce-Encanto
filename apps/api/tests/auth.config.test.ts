@@ -1,8 +1,12 @@
+
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
+  generarSecretoCsrf,
+  obtenerClaveCsrf,
   obtenerConfiguracionJwt,
   validarConfiguracionAutenticacion,
+  validarConfiguracionCsrf,
 } from '../src/config/auth.js';
 
 const secretoValido = Buffer.from(
@@ -122,7 +126,7 @@ describe('configuración JWT', () => {
     expect(configuracion.audiencia).toBe('dulceria-web');
   });
 
-  it('rechaza una duración que excede el rango de enteros seguros', () => {
+  it('rechaza una duración que excede los enteros seguros', () => {
     configurarEntorno();
     vi.stubEnv('JWT_ACCESS_TOKEN_TTL_SECONDS', '9007199254740992');
 
@@ -133,7 +137,7 @@ describe('configuración JWT', () => {
 
   it('rechaza un secreto base64url no canónico', () => {
     configurarEntorno();
-    vi.stubEnv('JWT_SECRET', 'A'.repeat(42) + 'B');
+    vi.stubEnv('JWT_SECRET', `${'A'.repeat(42)}B`);
 
     expect(() => obtenerConfiguracionJwt()).toThrow(
       'JWT_SECRET no tiene un formato válido',
@@ -148,4 +152,59 @@ describe('configuración JWT', () => {
     } as NodeJS.ProcessEnv;
 
     expect(obtenerConfiguracionJwt(entorno).duracionAccessToken).toBe(600);
-  });});
+  });
+});
+
+describe('configuración CSRF', () => {
+  it('devuelve la clave CSRF válida', () => {
+    vi.stubEnv('CSRF_SECRET', secretoValido);
+
+    expect(obtenerClaveCsrf()).toEqual(
+      Buffer.from(secretoValido, 'base64url'),
+    );
+  });
+
+  it('rechaza una clave CSRF ausente', () => {
+    vi.stubEnv('CSRF_SECRET', '');
+
+    expect(() => obtenerClaveCsrf()).toThrow('CSRF_SECRET');
+  });
+
+  it('rechaza una clave CSRF con formato incorrecto', () => {
+    vi.stubEnv('CSRF_SECRET', 'clave-invalida');
+
+    expect(() => obtenerClaveCsrf()).toThrow('CSRF_SECRET');
+  });
+
+  it('rechaza una clave CSRF que no representa 32 bytes', () => {
+    vi.stubEnv(
+      'CSRF_SECRET',
+      Buffer.from('corta').toString('base64url'),
+    );
+
+    expect(() => obtenerClaveCsrf()).toThrow('CSRF_SECRET');
+  });
+
+  it('rechaza una clave CSRF base64url no canónica', () => {
+    vi.stubEnv('CSRF_SECRET', `${'A'.repeat(42)}B`);
+
+    expect(() => obtenerClaveCsrf()).toThrow(
+      'CSRF_SECRET no tiene un formato válido',
+    );
+  });
+
+  it('valida la configuración CSRF', () => {
+    vi.stubEnv('CSRF_SECRET', secretoValido);
+
+    expect(validarConfiguracionCsrf()).toBeUndefined();
+  });
+
+  it('genera una clave CSRF aleatoria de 32 bytes', () => {
+    const primera = generarSecretoCsrf();
+    const segunda = generarSecretoCsrf();
+
+    expect(primera).toMatch(/^[A-Za-z0-9_-]{43}$/);
+    expect(Buffer.from(primera, 'base64url')).toHaveLength(32);
+    expect(segunda).not.toBe(primera);
+  });
+});

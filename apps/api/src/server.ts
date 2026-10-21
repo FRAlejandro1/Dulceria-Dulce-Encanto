@@ -1,12 +1,11 @@
-﻿
-import 'dotenv/config';
+﻿import 'dotenv/config';
 
-import { validarConfiguracionAutenticacion } from './config/auth.js';
 import { validarConfiguracionBaseDatos } from './config/database.js';
+import { validarConfiguracionCsrf } from './config/auth.js';
 import { crearAplicacion } from './app.js';
 
 validarConfiguracionBaseDatos();
-validarConfiguracionAutenticacion();
+validarConfiguracionCsrf();
 
 const app = crearAplicacion();
 const puerto = Number(process.env.PORT ?? 3000);

@@ -1,10 +1,11 @@
-﻿import { randomUUID } from 'node:crypto';
+import { randomUUID } from 'node:crypto';
 
 import { SignJWT, jwtVerify } from 'jose';
 
 import { obtenerConfiguracionJwt } from '../../config/auth.js';
+import { esRolUsuario, type RolUsuario } from './roles.js';
 
-export type RolUsuario = 'CLIENTE' | 'ADMIN';
+export type { RolUsuario } from './roles.js';
 
 export interface DatosAccessToken {
   userId: string;
@@ -25,7 +26,7 @@ export async function crearAccessToken(
     throw new Error('El identificador del usuario no es válido');
   }
 
-  if (datos.role !== 'CLIENTE' && datos.role !== 'ADMIN') {
+  if (!esRolUsuario(datos.role)) {
     throw new Error('El rol del usuario no es válido');
   }
 
@@ -64,7 +65,7 @@ export async function verificarAccessToken(
     typeof payload.jti !== 'string' ||
     typeof payload.exp !== 'number' ||
     payload.typ !== 'access' ||
-    (payload.role !== 'CLIENTE' && payload.role !== 'ADMIN')
+    !esRolUsuario(payload.role)
   ) {
     throw new Error('El contenido del access token no es válido');
   }

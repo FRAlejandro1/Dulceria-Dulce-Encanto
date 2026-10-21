@@ -1,10 +1,17 @@
-﻿import type {
-  ErrorRequestHandler,
-} from 'express';
+﻿import type { ErrorRequestHandler } from 'express';
 
+import { ErrorAplicacion } from './app-error.js';
 import { registrarError } from '../logging/logger.js';
 
+/**
+ * Obtiene un estado HTTP válido de un error no controlado.
+ * Los errores sin estado válido se consideran fallos internos.
+ */
 function obtenerEstado(error: unknown): number {
+  if (error instanceof ErrorAplicacion) {
+    return error.status;
+  }
+
   if (typeof error !== 'object' || error === null) {
     return 500;
   }
@@ -24,7 +31,18 @@ function obtenerEstado(error: unknown): number {
   return 500;
 }
 
-function obtenerMensajePublico(estado: number): string {
+/**
+ * Solo publica mensajes específicos de errores de aplicación.
+ * Nunca expone el mensaje original de un error inesperado.
+ */
+function obtenerMensajePublico(
+  error: unknown,
+  estado: number,
+): string {
+  if (error instanceof ErrorAplicacion) {
+    return error.mensajePublico;
+  }
+
   if (estado === 400) {
     return 'Solicitud inválida';
   }
@@ -60,6 +78,6 @@ export const manejarError: ErrorRequestHandler = (
   });
 
   res.status(estado).json({
-    error: obtenerMensajePublico(estado),
+    error: obtenerMensajePublico(error, estado),
   });
 };

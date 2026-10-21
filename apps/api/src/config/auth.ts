@@ -1,4 +1,9 @@
-﻿export interface ConfiguracionJwt {
+﻿import { randomBytes } from 'node:crypto';
+
+const LONGITUD_CLAVE = 32;
+const PATRON_CLAVE_BASE64URL = /^[A-Za-z0-9_-]{43}$/;
+
+export interface ConfiguracionJwt {
   clave: Uint8Array;
   emisor: string;
   audiencia: string;
@@ -13,13 +18,18 @@ export function obtenerConfiguracionJwt(
   const audiencia = entorno.JWT_AUDIENCE;
   const duracion = entorno.JWT_ACCESS_TOKEN_TTL_SECONDS ?? '600';
 
-  if (!secreto || !/^[A-Za-z0-9_-]{43}$/.test(secreto)) {
-    throw new Error('JWT_SECRET debe ser una clave aleatoria de 32 bytes en base64url');
+  if (!secreto || !PATRON_CLAVE_BASE64URL.test(secreto)) {
+    throw new Error(
+      'JWT_SECRET debe ser una clave aleatoria de 32 bytes en base64url',
+    );
   }
 
   const clave = Buffer.from(secreto, 'base64url');
 
-  if (clave.length !== 32 || clave.toString('base64url') !== secreto) {
+  if (
+    clave.length !== LONGITUD_CLAVE
+    || clave.toString('base64url') !== secreto
+  ) {
     throw new Error('JWT_SECRET no tiene un formato válido');
   }
 
@@ -38,11 +48,13 @@ export function obtenerConfiguracionJwt(
   const duracionAccessToken = Number(duracion);
 
   if (
-    !Number.isSafeInteger(duracionAccessToken) ||
-    duracionAccessToken < 60 ||
-    duracionAccessToken > 900
+    !Number.isSafeInteger(duracionAccessToken)
+    || duracionAccessToken < 60
+    || duracionAccessToken > 900
   ) {
-    throw new Error('La duración del access token debe estar entre 60 y 900 segundos');
+    throw new Error(
+      'La duración del access token debe estar entre 60 y 900 segundos',
+    );
   }
 
   return {
@@ -53,6 +65,41 @@ export function obtenerConfiguracionJwt(
   };
 }
 
+export function obtenerClaveCsrf(
+  entorno: NodeJS.ProcessEnv = process.env,
+): Uint8Array {
+  const secreto = entorno.CSRF_SECRET;
+
+  if (!secreto || !PATRON_CLAVE_BASE64URL.test(secreto)) {
+    throw new Error(
+      'CSRF_SECRET debe ser una clave aleatoria de 32 bytes en base64url',
+    );
+  }
+
+  const clave = Buffer.from(secreto, 'base64url');
+
+  if (
+    clave.length !== LONGITUD_CLAVE
+    || clave.toString('base64url') !== secreto
+  ) {
+    throw new Error('CSRF_SECRET no tiene un formato válido');
+  }
+
+  return clave;
+}
+
 export function validarConfiguracionAutenticacion(): void {
   obtenerConfiguracionJwt();
+}
+
+export function validarConfiguracionCsrf(): void {
+  obtenerClaveCsrf();
+}
+
+/**
+ * Genera una clave criptográficamente aleatoria de 32 bytes,
+ * codificada en Base64URL sin relleno.
+ */
+export function generarSecretoCsrf(): string {
+  return randomBytes(LONGITUD_CLAVE).toString('base64url');
 }
