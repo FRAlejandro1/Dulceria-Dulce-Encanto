@@ -1,7 +1,12 @@
-
-import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
+import {
+  lazy,
+  Suspense,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import './App.css'
-import { validarAdicionCarrito } from './utils/carrito.utils'
 import type {
   EstadoCarga,
   Producto,
@@ -9,6 +14,8 @@ import type {
   Variante,
 } from './types/catalogo.types'
 import type { UsuarioAutenticado } from './modules/auth/types/auth.types'
+import { useCart } from './modules/cart/hooks/useCart'
+import CartPanel from './modules/cart/components/CartPanel'
 
 const Auth = lazy(() => import('./modules/auth/Auth'))
 
@@ -26,6 +33,26 @@ function obtenerPrecioMinimo(producto: Producto): number {
   return Math.min(...producto.variantes.map(obtenerPrecio))
 }
 
+function desplazarAProductos(): void {
+  const elemento = document.getElementById('productos')
+
+  if (typeof elemento?.scrollIntoView === 'function') {
+    elemento.scrollIntoView({
+      behavior: 'auto',
+      block: 'start',
+    })
+  }
+}
+
+function desplazarAlInicio(): void {
+  if (typeof window.scrollTo === 'function') {
+    window.scrollTo({
+      top: 0,
+      behavior: 'auto',
+    })
+  }
+}
+
 function App() {
   const [productos, setProductos] = useState<Producto[]>([])
   const [estadoCarga, setEstadoCarga] = useState<EstadoCarga>('cargando')
@@ -37,7 +64,7 @@ function App() {
   const [variantesSeleccionadas, setVariantesSeleccionadas] = useState<
     Record<string, string>
   >({})
-  const [carrito, setCarrito] = useState<Record<string, number>>({})
+  const [vistaCarrito, setVistaCarrito] = useState(false)
   const [temaOscuro, setTemaOscuro] = useState(false)
   const [panel, setPanel] = useState<
     'ninguno' | 'notificaciones' | 'perfil'
@@ -46,6 +73,16 @@ function App() {
 
   const [usuario, setUsuario] = useState<UsuarioAutenticado | null>(null)
   const [authAbierta, setAuthAbierta] = useState(false)
+
+  const destinoPendiente = useRef(false)
+
+  const {
+    carrito,
+    cantidadCarrito,
+    agregarVariante,
+    cambiarCantidad,
+    eliminarVariante,
+  } = useCart(productos)
 
   useEffect(() => {
     const controlador = new AbortController()
@@ -99,6 +136,15 @@ function App() {
     return () => controlador.abort()
   }, [])
 
+  useEffect(() => {
+    if (vistaCarrito || !destinoPendiente.current) {
+      return
+    }
+
+    desplazarAProductos()
+    destinoPendiente.current = false
+  }, [vistaCarrito])
+
   const categorias = useMemo(
     () => [
       'Todos',
@@ -147,11 +193,6 @@ function App() {
     return lista
   }, [busqueda, categoria, favoritos, orden, productos, verFavoritos])
 
-  const cantidadCarrito = Object.values(carrito).reduce(
-    (total, cantidad) => total + cantidad,
-    0,
-  )
-
   function abrirAutenticacion() {
     setPanel('ninguno')
     setAuthAbierta(true)
@@ -169,7 +210,9 @@ function App() {
 
   function manejarCierreSesion() {
     setUsuario(null)
-    setAviso('Has cerrado sesión. Tus favoritos y carrito siguen siendo temporales.')
+    setAviso(
+      'Has cerrado sesión. Tus favoritos y carrito siguen siendo temporales.',
+    )
   }
 
   function obtenerVarianteSeleccionada(
@@ -193,47 +236,80 @@ function App() {
 
   function agregarAlCarrito(producto: Producto) {
     const variante = obtenerVarianteSeleccionada(producto)
-    const cantidadActual = variante ? (carrito[variante.id] ?? 0) : 0
-    const error = validarAdicionCarrito(variante, cantidadActual)
+
+    if (!variante) {
+      setAviso('Este producto no tiene variantes disponibles.')
+      return
+    }
+
+    const error = agregarVariante(variante)
 
     if (error) {
       setAviso(error)
       return
     }
 
-    if (!variante) return
-
-    setCarrito((actual) => ({
-      ...actual,
-      [variante.id]: (actual[variante.id] ?? 0) + 1,
-    }))
-
     setAviso(`${producto.nombre} se añadió al carrito.`)
   }
 
-  function manejarAccesoCarrito() {
-    if (cantidadCarrito === 0) {
-      setAviso('Tu carrito está vacío.')
-      return
-    }
+  function manejarCambioCantidad(varianteId: string, cantidad: number) {
+    const error = cambiarCantidad(varianteId, cantidad)
 
-    setAviso(
-      `Tienes ${cantidadCarrito} producto${
-        cantidadCarrito === 1 ? '' : 's'
-      } en tu carrito. El proceso de compra todavía no está disponible.`,
-    )
+    if (error) {
+      setAviso(error)
+    }
+  }
+
+  function finalizarPedidoNoDisponible() {
+    setAviso('La finalización de pedidos todavía no está disponible.')
   }
 
   function restablecerFiltros() {
+    destinoPendiente.current = false
     setBusqueda('')
     setCategoria('Todos')
     setVerFavoritos(false)
+    setVistaCarrito(false)
+  }
+
+  function navegarAProductos(restablecerCategoria: boolean) {
+    setPanel('ninguno')
+    setVerFavoritos(false)
+
+    if (restablecerCategoria) {
+      setCategoria('Todos')
+    }
+
+    if (vistaCarrito) {
+      destinoPendiente.current = true
+      setVistaCarrito(false)
+      return
+    }
+
+    destinoPendiente.current = false
+    desplazarAProductos()
+  }
+
+  function volverAlInicio() {
+    restablecerFiltros()
+    desplazarAlInicio()
   }
 
   return (
-    <main className={temaOscuro ? 'app app--dark' : 'app'}>
+    <main
+      id="inicio"
+      className={temaOscuro ? 'app app--dark' : 'app'}
+    >
       <header className="topbar">
-        <a className="brand" href="#inicio" aria-label="Dulce Encanto, inicio">
+        <a
+          className="brand"
+          href="#inicio"
+          aria-label="Dulce Encanto, inicio"
+          onClick={(evento) => {
+            evento.preventDefault()
+            volverAlInicio()
+          }}
+        >
           <span className="brand__mark">DE</span>
           <span className="brand__copy">
             <strong className="brand__name">Dulce Encanto</strong>
@@ -245,7 +321,10 @@ function App() {
           <a
             className="main-nav__item"
             href="#inicio"
-            onClick={restablecerFiltros}
+            onClick={(evento) => {
+              evento.preventDefault()
+              volverAlInicio()
+            }}
           >
             Inicio
           </a>
@@ -253,9 +332,9 @@ function App() {
           <a
             className="main-nav__item"
             href="#productos"
-            onClick={() => {
-              setVerFavoritos(false)
-              setCategoria('Todos')
+            onClick={(evento) => {
+              evento.preventDefault()
+              navegarAProductos(true)
             }}
           >
             Ofertas
@@ -264,18 +343,26 @@ function App() {
           <a
             className="main-nav__item"
             href="#productos"
-            onClick={() => setVerFavoritos(false)}
+            onClick={(evento) => {
+              evento.preventDefault()
+              navegarAProductos(false)
+            }}
           >
             Productos
           </a>
 
           <button
+            type="button"
             className={
               verFavoritos
                 ? 'main-nav__item main-nav__item--active'
                 : 'main-nav__item'
             }
-            onClick={() => setVerFavoritos((actual) => !actual)}
+            onClick={() => {
+              destinoPendiente.current = false
+              setVistaCarrito(false)
+              setVerFavoritos((actual) => !actual)
+            }}
             aria-pressed={verFavoritos}
           >
             Favoritos <span className="nav-count">{favoritos.length}</span>
@@ -284,6 +371,7 @@ function App() {
 
         <div className="header-actions">
           <button
+            type="button"
             className="icon-button"
             aria-label="Notificaciones"
             onClick={() =>
@@ -299,9 +387,15 @@ function App() {
           </button>
 
           <button
+            type="button"
             className="icon-button cart-button"
             aria-label={`Carrito, ${cantidadCarrito} productos`}
-            onClick={manejarAccesoCarrito}
+            aria-pressed={vistaCarrito}
+            onClick={() => {
+              setPanel('ninguno')
+              destinoPendiente.current = false
+              setVistaCarrito(true)
+            }}
           >
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path d="M3 4h2l2.2 11.2a2 2 0 0 0 2 1.6h7.9a2 2 0 0 0 1.9-1.4L21 8H6M10 21h.01M18 21h.01" />
@@ -312,6 +406,7 @@ function App() {
           </button>
 
           <button
+            type="button"
             className="icon-button theme-button"
             aria-label={
               temaOscuro ? 'Activar modo claro' : 'Activar modo oscuro'
@@ -322,6 +417,7 @@ function App() {
           </button>
 
           <button
+            type="button"
             className="profile-button"
             onClick={abrirAutenticacion}
             aria-label="Abrir perfil"
@@ -340,6 +436,7 @@ function App() {
       {panel !== 'ninguno' && (
         <section className="floating-panel" aria-live="polite">
           <button
+            type="button"
             className="toast__close floating-panel__close"
             onClick={() => setPanel('ninguno')}
             aria-label="Cerrar panel"
@@ -361,6 +458,7 @@ function App() {
                   : 'Inicia sesión para acceder a tu cuenta. Tus favoritos y carrito se gestionan temporalmente en este navegador.'}
               </p>
               <button
+                type="button"
                 className="floating-panel__action"
                 onClick={abrirAutenticacion}
               >
@@ -389,250 +487,269 @@ function App() {
         </Suspense>
       )}
 
-      <section className="catalog" id="inicio">
-        <div className="catalog__intro">
-          <div>
-            <p className="eyebrow">HECHO CON AMOR, PARA COMPARTIR</p>
-            <h1 className="catalog__title">
-              {verFavoritos ? 'Mis favoritos' : 'Nuestros productos'}
-            </h1>
-            <p className="catalog__description">
-              {verFavoritos
-                ? 'Tus dulces preferidos, siempre a mano.'
-                : 'Pequeños detalles que convierten cualquier día en algo especial.'}
-            </p>
-          </div>
+      {vistaCarrito ? (
+        <CartPanel
+          productos={productos}
+          carrito={carrito}
+          onCerrar={() => {
+            destinoPendiente.current = false
+            setVistaCarrito(false)
+          }}
+          onCambiarCantidad={manejarCambioCantidad}
+          onEliminar={eliminarVariante}
+          onFinalizarPedido={finalizarPedidoNoDisponible}
+        />
+      ) : (
+        <section className="catalog" id="productos">
+          <div className="catalog__intro">
+            <div>
+              <p className="eyebrow">HECHO CON AMOR, PARA COMPARTIR</p>
+              <h1 className="catalog__title">
+                {verFavoritos ? 'Mis favoritos' : 'Nuestros productos'}
+              </h1>
+              <p className="catalog__description">
+                {verFavoritos
+                  ? 'Tus dulces preferidos, siempre a mano.'
+                  : 'Pequeños detalles que convierten cualquier día en algo especial.'}
+              </p>
+            </div>
 
-          <span className="catalog-decoration" aria-hidden="true">
-            ♡
-          </span>
-        </div>
-
-        <section
-          className="catalog-toolbar"
-          aria-label="Buscar y filtrar productos"
-        >
-          <div className="search-box">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <circle cx="10.8" cy="10.8" r="6.8" />
-              <path d="m16 16 5 5" />
-            </svg>
-
-            <input
-              aria-label="Buscar productos"
-              placeholder="¿Qué se te antoja hoy?"
-              value={busqueda}
-              onChange={(evento) => setBusqueda(evento.target.value)}
-            />
-          </div>
-
-          <label className="sort-control">
-            Ordenar por
-            <select
-              className="sort-select"
-              aria-label="Ordenar productos"
-              value={orden}
-              onChange={(evento) => setOrden(evento.target.value)}
-            >
-              <option value="destacados">Destacados</option>
-              <option value="precio-menor">Precio: menor a mayor</option>
-              <option value="precio-mayor">Precio: mayor a menor</option>
-            </select>
-          </label>
-        </section>
-
-        <div className="category-list" aria-label="Categorías">
-          {categorias.map((nombre) => (
-            <button
-              key={nombre}
-              className={
-                categoria === nombre
-                  ? 'category-chip category-chip--active'
-                  : 'category-chip'
-              }
-              onClick={() => setCategoria(nombre)}
-              aria-pressed={categoria === nombre}
-            >
-              {nombre}
-            </button>
-          ))}
-        </div>
-
-        {estadoCarga === 'cargando' && (
-          <div className="catalog-status" role="status">
-            Cargando productos…
-          </div>
-        )}
-
-        {estadoCarga === 'error' && (
-          <div className="empty-state" role="alert">
-            <h2>No pudimos cargar el catálogo</h2>
-            <p>
-              Comprueba tu conexión con el servidor e inténtalo de nuevo.
-            </p>
-            <button
-              className="empty-state__reset"
-              onClick={() => window.location.reload()}
-            >
-              Reintentar
-            </button>
-          </div>
-        )}
-
-        {estadoCarga === 'correcto' && productosVisibles.length > 0 && (
-          <section
-            className="product-grid"
-            id="productos"
-            aria-label="Catálogo de productos"
-          >
-            {productosVisibles.map((producto) => {
-              const variante = obtenerVarianteSeleccionada(producto)
-
-              if (!variante) return null
-
-              const precio = obtenerPrecio(variante)
-              const favorito = favoritos.includes(producto.id)
-              const stock = variante.stockDisponible
-              const cantidadEnCarrito = carrito[variante.id] ?? 0
-              const sinStock = stock <= 0
-              const limiteAlcanzado = cantidadEnCarrito >= stock
-
-              return (
-                <article className="product-card" key={producto.id}>
-                  <div className="product-card__visual">
-                    <img
-                      className="product-card__image"
-                      src={producto.imagenUrl ?? IMAGEN_POR_DEFECTO}
-                      alt={producto.nombre}
-                      loading="lazy"
-                    />
-
-                    <button
-                      className={
-                        favorito
-                          ? 'product-card__favorite product-card__favorite--active'
-                          : 'product-card__favorite'
-                      }
-                      aria-label={
-                        favorito
-                          ? `Quitar ${producto.nombre} de favoritos`
-                          : `Añadir ${producto.nombre} a favoritos`
-                      }
-                      aria-pressed={favorito}
-                      onClick={() => alternarFavorito(producto.id)}
-                    >
-                      {favorito ? '♥' : '♡'}
-                    </button>
-                  </div>
-
-                  <div className="product-card__body">
-                    <p className="product-card__category">
-                      {producto.categoria.nombre}
-                    </p>
-
-                    <h2 className="product-card__name">{producto.nombre}</h2>
-
-                    <p className="product-card__description">
-                      {producto.descripcion ||
-                        'Un dulce preparado para disfrutar.'}
-                    </p>
-
-                    {producto.variantes.length > 1 && (
-                      <label className="variant-control">
-                        Presentación
-                        <select
-                          aria-label={`Presentación de ${producto.nombre}`}
-                          value={variante.id}
-                          onChange={(evento) =>
-                            setVariantesSeleccionadas((actual) => ({
-                              ...actual,
-                              [producto.id]: evento.target.value,
-                            }))
-                          }
-                        >
-                          {producto.variantes.map((opcion) => (
-                            <option key={opcion.id} value={opcion.id}>
-                              {opcion.nombre} — $
-                              {obtenerPrecio(opcion).toFixed(2)}
-                              {' · Stock: '}
-                              {opcion.stockDisponible}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                    )}
-
-                    <p className="product-card__stock">
-                      {stock > 0 ? `${stock} disponibles` : 'Agotado'}
-                    </p>
-
-                    <div className="product-card__bottom">
-                      <strong className="product-card__price">
-                        ${precio.toFixed(2)}
-                      </strong>
-
-                      <button
-                        className="product-card__add"
-                        onClick={() => agregarAlCarrito(producto)}
-                        disabled={sinStock || limiteAlcanzado}
-                        aria-label={`Agregar ${producto.nombre} al carrito`}
-                      >
-                        <span aria-hidden="true">＋</span>
-                        <span>
-                          {sinStock
-                            ? 'Agotado'
-                            : limiteAlcanzado
-                              ? 'Stock completo'
-                              : 'Agregar'}
-                        </span>
-                      </button>
-                    </div>
-                  </div>
-                </article>
-              )
-            })}
-          </section>
-        )}
-
-        {estadoCarga === 'correcto' && productosVisibles.length === 0 && (
-          <div className="empty-state">
-            <span className="empty-state__icon" aria-hidden="true">
+            <span className="catalog-decoration" aria-hidden="true">
               ♡
             </span>
-
-            <h2>
-              {verFavoritos && favoritos.length === 0
-                ? 'Aún no tienes favoritos'
-                : 'No encontramos productos'}
-            </h2>
-
-            <p>
-              {verFavoritos && favoritos.length === 0
-                ? 'Guarda productos con el corazón para encontrarlos aquí.'
-                : 'Prueba con otra búsqueda o categoría.'}
-            </p>
-
-            <button
-              className="empty-state__reset"
-              onClick={restablecerFiltros}
-            >
-              Ver todos los productos
-            </button>
           </div>
-        )}
 
-        <p className="demo-notice">
-          Los productos, precios y existencias se consultan desde el catálogo
-          de la tienda. Las imágenes se asignan en el frontend porque la API
-          actual no incluye ese campo. Los favoritos y el carrito son
-          temporales y no se guardan en el servidor.
-        </p>
-      </section>
+          <section
+            className="catalog-toolbar"
+            aria-label="Buscar y filtrar productos"
+          >
+            <div className="search-box">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="10.8" cy="10.8" r="6.8" />
+                <path d="m16 16 5 5" />
+              </svg>
+
+              <input
+                aria-label="Buscar productos"
+                placeholder="¿Qué se te antoja hoy?"
+                value={busqueda}
+                onChange={(evento) => setBusqueda(evento.target.value)}
+              />
+            </div>
+
+            <label className="sort-control">
+              Ordenar por
+              <select
+                className="sort-select"
+                aria-label="Ordenar productos"
+                value={orden}
+                onChange={(evento) => setOrden(evento.target.value)}
+              >
+                <option value="destacados">Destacados</option>
+                <option value="precio-menor">Precio: menor a mayor</option>
+                <option value="precio-mayor">Precio: mayor a menor</option>
+              </select>
+            </label>
+          </section>
+
+          <div className="category-list" aria-label="Categorías">
+            {categorias.map((nombre) => (
+              <button
+                type="button"
+                key={nombre}
+                className={
+                  categoria === nombre
+                    ? 'category-chip category-chip--active'
+                    : 'category-chip'
+                }
+                onClick={() => setCategoria(nombre)}
+                aria-pressed={categoria === nombre}
+              >
+                {nombre}
+              </button>
+            ))}
+          </div>
+
+          {estadoCarga === 'cargando' && (
+            <div className="catalog-status" role="status">
+              Cargando productos…
+            </div>
+          )}
+
+          {estadoCarga === 'error' && (
+            <div className="empty-state" role="alert">
+              <h2>No pudimos cargar el catálogo</h2>
+              <p>
+                Comprueba tu conexión con el servidor e inténtalo de nuevo.
+              </p>
+              <button
+                type="button"
+                className="empty-state__reset"
+                onClick={() => window.location.reload()}
+              >
+                Reintentar
+              </button>
+            </div>
+          )}
+
+          {estadoCarga === 'correcto' && productosVisibles.length > 0 && (
+            <section
+              className="product-grid"
+              aria-label="Catálogo de productos"
+            >
+              {productosVisibles.map((producto) => {
+                const variante = obtenerVarianteSeleccionada(producto)
+
+                if (!variante) return null
+
+                const precio = obtenerPrecio(variante)
+                const favorito = favoritos.includes(producto.id)
+                const stock = variante.stockDisponible
+                const cantidadEnCarrito = carrito[variante.id] ?? 0
+                const sinStock = stock <= 0
+                const limiteAlcanzado = cantidadEnCarrito >= stock
+
+                return (
+                  <article className="product-card" key={producto.id}>
+                    <div className="product-card__visual">
+                      <img
+                        className="product-card__image"
+                        src={producto.imagenUrl ?? IMAGEN_POR_DEFECTO}
+                        alt={producto.nombre}
+                        loading="lazy"
+                      />
+
+                      <button
+                        type="button"
+                        className={
+                          favorito
+                            ? 'product-card__favorite product-card__favorite--active'
+                            : 'product-card__favorite'
+                        }
+                        aria-label={
+                          favorito
+                            ? `Quitar ${producto.nombre} de favoritos`
+                            : `Añadir ${producto.nombre} a favoritos`
+                        }
+                        aria-pressed={favorito}
+                        onClick={() => alternarFavorito(producto.id)}
+                      >
+                        {favorito ? '♥' : '♡'}
+                      </button>
+                    </div>
+
+                    <div className="product-card__body">
+                      <p className="product-card__category">
+                        {producto.categoria.nombre}
+                      </p>
+
+                      <h2 className="product-card__name">{producto.nombre}</h2>
+
+                      <p className="product-card__description">
+                        {producto.descripcion ||
+                          'Un dulce preparado para disfrutar.'}
+                      </p>
+
+                      {producto.variantes.length > 1 && (
+                        <label className="variant-control">
+                          Presentación
+                          <select
+                            aria-label={`Presentación de ${producto.nombre}`}
+                            value={variante.id}
+                            onChange={(evento) =>
+                              setVariantesSeleccionadas((actual) => ({
+                                ...actual,
+                                [producto.id]: evento.target.value,
+                              }))
+                            }
+                          >
+                            {producto.variantes.map((opcion) => (
+                              <option key={opcion.id} value={opcion.id}>
+                                {opcion.nombre} — $
+                                {obtenerPrecio(opcion).toFixed(2)}
+                                {' · Stock: '}
+                                {opcion.stockDisponible}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                      )}
+
+                      <p className="product-card__stock">
+                        {stock > 0 ? `${stock} disponibles` : 'Agotado'}
+                      </p>
+
+                      <div className="product-card__bottom">
+                        <strong className="product-card__price">
+                          ${precio.toFixed(2)}
+                        </strong>
+
+                        <button
+                          type="button"
+                          className="product-card__add"
+                          onClick={() => agregarAlCarrito(producto)}
+                          disabled={sinStock || limiteAlcanzado}
+                          aria-label={`Agregar ${producto.nombre} al carrito`}
+                        >
+                          <span aria-hidden="true">＋</span>
+                          <span>
+                            {sinStock
+                              ? 'Agotado'
+                              : limiteAlcanzado
+                                ? 'Stock completo'
+                                : 'Agregar'}
+                          </span>
+                        </button>
+                      </div>
+                    </div>
+                  </article>
+                )
+              })}
+            </section>
+          )}
+
+          {estadoCarga === 'correcto' && productosVisibles.length === 0 && (
+            <div className="empty-state">
+              <span className="empty-state__icon" aria-hidden="true">
+                ♡
+              </span>
+
+              <h2>
+                {verFavoritos && favoritos.length === 0
+                  ? 'Aún no tienes favoritos'
+                  : 'No encontramos productos'}
+              </h2>
+
+              <p>
+                {verFavoritos && favoritos.length === 0
+                  ? 'Guarda productos con el corazón para encontrarlos aquí.'
+                  : 'Prueba con otra búsqueda o categoría.'}
+              </p>
+
+              <button
+                type="button"
+                className="empty-state__reset"
+                onClick={restablecerFiltros}
+              >
+                Ver todos los productos
+              </button>
+            </div>
+          )}
+
+          <p className="demo-notice">
+            Los productos, precios y existencias se consultan desde el catálogo
+            de la tienda. Las imágenes se asignan en el frontend porque la API
+            actual no incluye ese campo. Los favoritos y el carrito son
+            temporales y no se guardan en el servidor.
+          </p>
+        </section>
+      )}
 
       {aviso && (
         <div className="toast" role="status">
           <span className="toast__message">{aviso}</span>
           <button
+            type="button"
             className="toast__close"
             onClick={() => setAviso('')}
             aria-label="Cerrar aviso"
@@ -645,11 +762,18 @@ function App() {
       <footer className="footer">
         <span className="brand__mark footer__mark">DE</span>
         <p>© Dulce Encanto · Hecho para compartir momentos dulces.</p>
-        <a href="#inicio">Volver arriba ↑</a>
+        <a
+          href="#inicio"
+          onClick={(evento) => {
+            evento.preventDefault()
+            volverAlInicio()
+          }}
+        >
+          Volver arriba ↑
+        </a>
       </footer>
     </main>
   )
 }
 
 export default App
-

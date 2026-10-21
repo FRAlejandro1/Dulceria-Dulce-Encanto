@@ -116,7 +116,7 @@ describe('Casos límite del catálogo', () => {
     expect(agregar.textContent).toContain('Stock completo')
   })
 
-  it('muestra el mensaje plural al consultar el carrito con varias unidades', async () => {
+  it('muestra el carrito con varias unidades', async () => {
     render(<App />)
 
     const titulo = await screen.findByRole('heading', {
@@ -135,12 +135,23 @@ describe('Casos límite del catálogo', () => {
       screen.getByRole('button', { name: 'Carrito, 2 productos' }),
     )
 
-    expect(screen.getByRole('status').textContent).toContain(
-      'Tienes 2 productos en tu carrito. El proceso de compra todavía no está disponible.',
-    )
+    expect(
+      screen.getByRole('heading', { name: 'Mi carrito' }),
+    ).toBeTruthy()
+
+    expect(
+      screen.getByRole('heading', { name: 'Producto de prueba' }),
+    ).toBeTruthy()
+
+    expect(
+      screen.getByRole('button', { name: 'Finalizar pedido' }),
+    ).toBeTruthy()
+
+    expect(screen.getByText('2', { selector: '.cart-item__quantity-value' }))
+      .toBeTruthy()
   })
 
-  it('muestra el mensaje singular al consultar el carrito con una unidad', async () => {
+  it('muestra el carrito con una unidad', async () => {
     render(<App />)
 
     const titulo = await screen.findByRole('heading', {
@@ -158,9 +169,20 @@ describe('Casos límite del catálogo', () => {
       screen.getByRole('button', { name: 'Carrito, 1 productos' }),
     )
 
-    expect(screen.getByRole('status').textContent).toContain(
-      'Tienes 1 producto en tu carrito. El proceso de compra todavía no está disponible.',
-    )
+    expect(
+      screen.getByRole('heading', { name: 'Mi carrito' }),
+    ).toBeTruthy()
+
+    expect(
+      screen.getByRole('heading', { name: 'Producto de prueba' }),
+    ).toBeTruthy()
+
+    expect(
+      screen.getByRole('button', { name: 'Finalizar pedido' }),
+    ).toBeTruthy()
+
+    expect(screen.getByText('1', { selector: '.cart-item__quantity-value' }))
+      .toBeTruthy()
   })
 
   it('mantiene deshabilitada la adición de una variante agotada', async () => {

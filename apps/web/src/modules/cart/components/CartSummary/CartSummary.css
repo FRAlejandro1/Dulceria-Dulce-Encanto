@@ -1,0 +1,116 @@
+.cart-summary {
+  align-self: start;
+  padding: 30px;
+  border: 1px solid var(--color-borde);
+  border-radius: 22px;
+  background: var(--color-superficie);
+  box-shadow: var(--color-sombra);
+}
+
+.cart-summary__title {
+  margin: 0 0 26px;
+  color: var(--color-texto);
+  font-size: 27px;
+  font-weight: 650;
+  line-height: 1.25;
+}
+
+.cart-summary__row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 18px;
+  color: var(--color-secundario);
+  font-size: 14px;
+}
+
+.cart-summary__row > :last-child {
+  color: var(--color-texto);
+  text-align: right;
+}
+
+.cart-summary__shipping > :last-child {
+  max-width: 130px;
+  font-size: 12px;
+}
+
+.cart-summary__note {
+  margin: 0 0 22px;
+  color: var(--color-secundario);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.cart-summary__total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 22px 0;
+  border-top: 1px solid var(--color-borde);
+  color: var(--color-texto);
+  font-size: 15px;
+}
+
+.cart-summary__total strong {
+  font-size: 21px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.cart-summary__checkout {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 54px;
+  padding: 0 20px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--color-acento);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 650;
+  cursor: pointer;
+  transition: background-color 160ms ease, transform 160ms ease;
+}
+
+.cart-summary__checkout:hover {
+  background: var(--color-acento-hover);
+}
+
+.cart-summary__checkout:active {
+  transform: scale(0.99);
+}
+
+.cart-summary__checkout span {
+  font-size: 21px;
+}
+
+.cart-summary__secure-note {
+  margin: 14px 0 0;
+  color: var(--color-secundario);
+  font-size: 11px;
+  line-height: 1.5;
+  text-align: center;
+}
+
+@media (max-width: 760px) {
+  .cart-summary {
+    padding: 25px;
+  }
+}
+
+@media (max-width: 480px) {
+  .cart-summary {
+    padding: 22px;
+    border-radius: 18px;
+  }
+
+  .cart-summary__title {
+    margin-bottom: 22px;
+    font-size: 23px;
+  }
+}

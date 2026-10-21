@@ -124,7 +124,9 @@ describe('Catálogo de Dulce Encanto', () => {
     await esperarCatalogo()
 
     expect(screen.getAllByRole('article')).toHaveLength(5)
-    expect(screen.getByRole('heading', { name: 'Galletas con chispas' })).toBeTruthy()
+    expect(
+      screen.getByRole('heading', { name: 'Galletas con chispas' }),
+    ).toBeTruthy()
     expect(fetch).toHaveBeenCalledWith(
       '/api/v1/catalog/products',
       expect.objectContaining({
@@ -338,7 +340,16 @@ describe('Catálogo de Dulce Encanto', () => {
     fireEvent.click(
       screen.getByRole('button', { name: 'Carrito, 2 productos' }),
     )
-    expect(screen.getByText(/Tienes 2 producto/)).toBeTruthy()
+
+    expect(
+      screen.getByRole('heading', { name: 'Mi carrito' }),
+    ).toBeTruthy()
+    expect(
+      screen.getByRole('heading', { name: 'Caramelos surtidos' }),
+    ).toBeTruthy()
+    expect(
+      screen.getByRole('button', { name: 'Finalizar pedido' }),
+    ).toBeTruthy()
   })
 
   it('informa cuando el carrito está vacío', async () => {
@@ -349,7 +360,12 @@ describe('Catálogo de Dulce Encanto', () => {
       screen.getByRole('button', { name: 'Carrito, 0 productos' }),
     )
 
-    expect(screen.getByText('Tu carrito está vacío.')).toBeTruthy()
+    expect(
+      screen.getByRole('heading', { name: 'Tu carrito está vacío' }),
+    ).toBeTruthy()
+    expect(
+      screen.getByRole('button', { name: 'Explorar catálogo' }),
+    ).toBeTruthy()
   })
 
   it('abre y cierra las notificaciones', async () => {
@@ -376,7 +392,6 @@ describe('Catálogo de Dulce Encanto', () => {
       screen.queryByText('No tienes notificaciones nuevas.'),
     ).toBeNull()
   })
-
 
   it('abre y cierra el diálogo de autenticación desde el perfil', async () => {
     render(<App />)
