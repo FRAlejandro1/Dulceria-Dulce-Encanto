@@ -2,6 +2,9 @@ name: SonarCloud
 
 on:
   workflow_call:
+    secrets:
+      SONAR_TOKEN_DULCERIA:
+        required: true
 
 permissions:
   contents: read
