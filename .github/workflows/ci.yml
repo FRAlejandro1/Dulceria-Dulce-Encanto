@@ -19,166 +19,42 @@ concurrency:
 jobs:
   frontend:
     name: Frontend
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-
-      - run: npm ci
-      - run: npm run lint:web
-      - run: npm run type-check:web
-      - run: npm run build:web
-
-      - name: Upload frontend build
-        uses: actions/upload-artifact@v4
-        with:
-          name: web-dist
-          path: apps/web/dist/
-          if-no-files-found: error
-          retention-days: 7
+    uses: ./.github/workflows/frontend.yml
 
   backend:
     name: Backend
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-
-      - run: npm ci
-      - run: npm run lint:api
-      - run: npm run type-check:api
-      - run: npm run build:api
+    uses: ./.github/workflows/backend.yml
 
   test-frontend:
-    name: Frontend Unit Tests and Coverage
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-
-      - run: npm ci
-      - run: npm run test:coverage --workspace @dulceria/web
-
-      - name: Upload frontend coverage
-        uses: actions/upload-artifact@v4
-        with:
-          name: web-coverage
-          path: apps/web/coverage/lcov.info
-          if-no-files-found: error
-          retention-days: 7
+    name: Pruebas unitarias frontend
+    uses: ./.github/workflows/test-frontend.yml
 
   test-backend:
-    name: Backend Unit Tests and Coverage
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-
-      - run: npm ci
-      - run: npm run test:coverage --workspace @dulceria/api
-
-      - name: Upload backend coverage
-        uses: actions/upload-artifact@v4
-        with:
-          name: api-coverage
-          path: apps/api/coverage/lcov.info
-          if-no-files-found: error
-          retention-days: 7
+    name: Pruebas unitarias backend
+    uses: ./.github/workflows/test-backend.yml
 
   integration:
-    name: HTTP Integration Tests
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-
-      - run: npm ci
-
-      - name: Test Express HTTP behavior
-        run: npm run test --workspace @dulceria/api -- tests/app.test.ts
+    name: Integración HTTP
+    uses: ./.github/workflows/test-integration.yml
 
   docker:
     name: Docker
+    needs:
+      - frontend
+      - backend
+      - test-frontend
+      - test-backend
+      - integration
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Check Docker
-        run: docker --version
-
-      - name: Build frontend image
-        run: docker build --target frontend -t dulceria-dulce-encanto-frontend:${{ github.sha }} .
-
-      - name: Build backend image
-        run: docker build --target backend -t dulceria-dulce-encanto-backend:${{ github.sha }} .
+    uses: ./.github/workflows/docker.yml
 
   sonarcloud:
     name: SonarCloud
+    needs:
+      - frontend
+      - backend
+      - test-frontend
+      - test-backend
+      - integration
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: [test-frontend, test-backend]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-
-      - run: npm ci
-
-      - name: Download frontend coverage
-        uses: actions/download-artifact@v4
-        with:
-          name: web-coverage
-          path: apps/web/coverage
-
-      - name: Download backend coverage
-        uses: actions/download-artifact@v4
-        with:
-          name: api-coverage
-          path: apps/api/coverage
-
-      - name: Validate SonarCloud configuration
-        env:
-          SONAR_PROJECT_KEY: ${{ vars.SONAR_PROJECT_KEY_DULCERIA }}
-          SONAR_ORGANIZATION: ${{ vars.SONAR_ORGANIZATION_DULCERIA }}
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN_DULCERIA }}
-        shell: bash
-        run: |
-          test -n "$SONAR_PROJECT_KEY" || { echo "::error::Project key vacío"; exit 1; }
-          test -n "$SONAR_ORGANIZATION" || { echo "::error::Organization vacía"; exit 1; }
-          test -n "$SONAR_TOKEN" || { echo "::error::Token vacío"; exit 1; }
-
-      - name: Analyze with SonarCloud
-        uses: SonarSource/sonarcloud-github-action@v3
-        with:
-          args: >-
-            -Dsonar.projectKey=${{ vars.SONAR_PROJECT_KEY_DULCERIA }}
-            -Dsonar.organization=${{ vars.SONAR_ORGANIZATION_DULCERIA }}
-            -Dsonar.branch.name=main
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN_DULCERIA }}
+    uses: ./.github/workflows/sonarcloud.yml
