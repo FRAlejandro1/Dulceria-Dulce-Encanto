@@ -1,3 +1,4 @@
+
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vitest/config'
 
@@ -16,7 +17,13 @@ export default defineConfig({
     include: ['tests/**/*.test.{ts,tsx}'],
     coverage: {
       provider: 'v8',
-      include: ['src/App.tsx', 'src/main.tsx'],
+      include: ['src/**/*.{ts,tsx}'],
+      exclude: [
+        '**/*.d.ts',
+        '**/*.types.ts',
+        '**/*.constants.ts',
+        '**/types/**',
+      ],
       reportsDirectory: './coverage',
       reporter: ['text', 'lcov', 'json'],
       thresholds: {

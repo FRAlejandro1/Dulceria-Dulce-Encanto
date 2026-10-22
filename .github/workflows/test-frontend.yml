@@ -1,4 +1,3 @@
-
 name: Frontend Unit Tests
 
 on:
@@ -12,18 +11,22 @@ jobs:
     name: Frontend · Tests and coverage
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Descargar el codigo
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - name: Preparar Node.js
+        uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
           cache: npm
 
-      - run: npm ci
+      - name: Instalar dependencias
+        run: npm ci --no-audit --no-fund
 
-      - run: npm run test:coverage --workspace @dulceria/web
+      - name: Ejecutar pruebas y cobertura
+        run: npm run test:coverage --workspace @dulceria/web
 
-      - name: Upload frontend coverage
+      - name: Guardar cobertura frontend
         uses: actions/upload-artifact@v4
         with:
           name: web-coverage

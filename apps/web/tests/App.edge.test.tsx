@@ -1,5 +1,18 @@
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  within,
+} from '@testing-library/react'
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest'
 import App from '../src/App'
 import { validarAdicionCarrito } from '../src/utils/carrito.utils'
 
@@ -36,6 +49,26 @@ function respuesta(productos: unknown = productosBase, ok = true) {
   } as Response
 }
 
+async function esperarProducto() {
+  return screen.findByRole('heading', {
+    name: 'Producto de prueba',
+  })
+}
+
+function obtenerTarjeta(titulo: HTMLElement) {
+  const tarjeta = titulo.closest('article')
+
+  expect(tarjeta).not.toBeNull()
+
+  return within(tarjeta as HTMLElement)
+}
+
+function obtenerBotonAgregar(tarjeta: ReturnType<typeof obtenerTarjeta>) {
+  return tarjeta.getByRole('button', {
+    name: 'Agregar Producto de prueba al carrito',
+  })
+}
+
 afterEach(() => {
   cleanup()
   vi.unstubAllGlobals()
@@ -45,94 +78,153 @@ afterEach(() => {
 beforeEach(() => {
   vi.stubGlobal(
     'fetch',
-    vi.fn().mockResolvedValue(respuesta({ productos: productosBase })),
+    vi.fn().mockResolvedValue(
+      respuesta({ productos: productosBase }),
+    ),
   )
 })
 
 describe('Casos límite del catálogo', () => {
+  it('permite volver al catálogo desde la navegación con el carrito abierto', async () => {
+    render(<App />)
+
+    const titulo = await esperarProducto()
+    const tarjeta = obtenerTarjeta(titulo)
+
+    fireEvent.click(obtenerBotonAgregar(tarjeta))
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Carrito, 1 productos' }),
+    )
+
+    expect(
+      screen.getByRole('heading', { name: 'Mi carrito' }),
+    ).toBeTruthy()
+
+    fireEvent.click(
+      screen.getByRole('link', { name: /Productos/ }),
+    )
+
+    expect(
+      await screen.findByRole('heading', {
+        name: 'Nuestros productos',
+      }),
+    ).toBeTruthy()
+    expect(await esperarProducto()).toBeTruthy()
+  })
+
   it('permite seleccionar otra variante y actualiza precio y existencias', async () => {
     render(<App />)
 
-    const titulo = await screen.findByRole('heading', {
-      name: 'Producto de prueba',
-    })
-    const tarjeta = titulo.closest('article')
+    const titulo = await esperarProducto()
+    const tarjeta = obtenerTarjeta(titulo)
 
-    expect(tarjeta).not.toBeNull()
-
-    const contenidoTarjeta = within(tarjeta as HTMLElement)
-    const selector = contenidoTarjeta.getByRole('combobox', {
+    const selector = tarjeta.getByRole('combobox', {
       name: 'Presentación de Producto de prueba',
     })
 
-    expect(contenidoTarjeta.getByText('$1.00')).toBeTruthy()
-    expect(contenidoTarjeta.getByText('2 disponibles')).toBeTruthy()
+    expect(tarjeta.getByText('$1.00')).toBeTruthy()
+    expect(tarjeta.getByText('2 disponibles')).toBeTruthy()
 
     fireEvent.change(selector, {
       target: { value: 'variante-paquete' },
     })
 
-    expect(contenidoTarjeta.getByText('$3.50')).toBeTruthy()
-    expect(contenidoTarjeta.getByText('5 disponibles')).toBeTruthy()
+    expect(tarjeta.getByText('$3.50')).toBeTruthy()
+    expect(tarjeta.getByText('5 disponibles')).toBeTruthy()
 
-    fireEvent.click(
-      contenidoTarjeta.getByRole('button', {
-        name: 'Agregar Producto de prueba al carrito',
-      }),
-    )
+    fireEvent.click(obtenerBotonAgregar(tarjeta))
 
     expect(
-      screen.getByRole('button', { name: 'Carrito, 1 productos' }),
+      screen.getByRole('button', {
+        name: 'Carrito, 1 productos',
+      }),
     ).toBeTruthy()
   })
 
   it('impide añadir más unidades que el stock de la variante seleccionada', async () => {
     render(<App />)
 
-    const titulo = await screen.findByRole('heading', {
-      name: 'Producto de prueba',
-    })
-    const tarjeta = titulo.closest('article') as HTMLElement
-    const contenidoTarjeta = within(tarjeta)
+    const titulo = await esperarProducto()
+    const tarjeta = obtenerTarjeta(titulo)
 
     fireEvent.change(
-      contenidoTarjeta.getByRole('combobox', {
+      tarjeta.getByRole('combobox', {
         name: 'Presentación de Producto de prueba',
       }),
       { target: { value: 'variante-unidad' } },
     )
 
-    const agregar = contenidoTarjeta.getByRole('button', {
-      name: 'Agregar Producto de prueba al carrito',
-    })
+    const agregar = obtenerBotonAgregar(tarjeta)
 
     fireEvent.click(agregar)
     fireEvent.click(agregar)
 
     expect(
-      screen.getByRole('button', { name: 'Carrito, 2 productos' }),
+      screen.getByRole('button', {
+        name: 'Carrito, 2 productos',
+      }),
     ).toBeTruthy()
+
     expect((agregar as HTMLButtonElement).disabled).toBe(true)
     expect(agregar.textContent).toContain('Stock completo')
+  })
+
+  it('muestra el aviso cuando se añade un producto al carrito', async () => {
+    render(<App />)
+
+    const titulo = await esperarProducto()
+    const tarjeta = obtenerTarjeta(titulo)
+
+    fireEvent.click(obtenerBotonAgregar(tarjeta))
+
+    expect(
+      await screen.findByText(
+        'Producto de prueba se añadió al carrito.',
+      ),
+    ).toBeTruthy()
+
+    expect(screen.getByRole('status')).toBeTruthy()
+  })
+
+  it('permite cerrar el aviso después de añadir un producto', async () => {
+    render(<App />)
+
+    const titulo = await esperarProducto()
+    const tarjeta = obtenerTarjeta(titulo)
+
+    fireEvent.click(obtenerBotonAgregar(tarjeta))
+
+    expect(
+      await screen.findByText(
+        'Producto de prueba se añadió al carrito.',
+      ),
+    ).toBeTruthy()
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Cerrar aviso' }),
+    )
+
+    expect(
+      screen.queryByText(
+        'Producto de prueba se añadió al carrito.',
+      ),
+    ).toBeNull()
   })
 
   it('muestra el carrito con varias unidades', async () => {
     render(<App />)
 
-    const titulo = await screen.findByRole('heading', {
-      name: 'Producto de prueba',
-    })
-    const tarjeta = titulo.closest('article') as HTMLElement
-
-    const agregar = within(tarjeta).getByRole('button', {
-      name: 'Agregar Producto de prueba al carrito',
-    })
+    const titulo = await esperarProducto()
+    const tarjeta = obtenerTarjeta(titulo)
+    const agregar = obtenerBotonAgregar(tarjeta)
 
     fireEvent.click(agregar)
     fireEvent.click(agregar)
 
     fireEvent.click(
-      screen.getByRole('button', { name: 'Carrito, 2 productos' }),
+      screen.getByRole('button', {
+        name: 'Carrito, 2 productos',
+      }),
     )
 
     expect(
@@ -140,33 +232,34 @@ describe('Casos límite del catálogo', () => {
     ).toBeTruthy()
 
     expect(
-      screen.getByRole('heading', { name: 'Producto de prueba' }),
+      screen.getByRole('heading', {
+        name: 'Producto de prueba',
+      }),
     ).toBeTruthy()
 
     expect(
       screen.getByRole('button', { name: 'Finalizar pedido' }),
     ).toBeTruthy()
 
-    expect(screen.getByText('2', { selector: '.cart-item__quantity-value' }))
-      .toBeTruthy()
+    expect(
+      screen.getByText('2', {
+        selector: '.cart-item__quantity-value',
+      }),
+    ).toBeTruthy()
   })
 
   it('muestra el carrito con una unidad', async () => {
     render(<App />)
 
-    const titulo = await screen.findByRole('heading', {
-      name: 'Producto de prueba',
-    })
-    const tarjeta = titulo.closest('article') as HTMLElement
+    const titulo = await esperarProducto()
+    const tarjeta = obtenerTarjeta(titulo)
+
+    fireEvent.click(obtenerBotonAgregar(tarjeta))
 
     fireEvent.click(
-      within(tarjeta).getByRole('button', {
-        name: 'Agregar Producto de prueba al carrito',
+      screen.getByRole('button', {
+        name: 'Carrito, 1 productos',
       }),
-    )
-
-    fireEvent.click(
-      screen.getByRole('button', { name: 'Carrito, 1 productos' }),
     )
 
     expect(
@@ -174,15 +267,45 @@ describe('Casos límite del catálogo', () => {
     ).toBeTruthy()
 
     expect(
-      screen.getByRole('heading', { name: 'Producto de prueba' }),
+      screen.getByRole('heading', {
+        name: 'Producto de prueba',
+      }),
     ).toBeTruthy()
 
     expect(
       screen.getByRole('button', { name: 'Finalizar pedido' }),
     ).toBeTruthy()
 
-    expect(screen.getByText('1', { selector: '.cart-item__quantity-value' }))
-      .toBeTruthy()
+    expect(
+      screen.getByText('1', {
+        selector: '.cart-item__quantity-value',
+      }),
+    ).toBeTruthy()
+  })
+
+  it('informa que la finalización del pedido todavía no está disponible', async () => {
+    render(<App />)
+
+    const titulo = await esperarProducto()
+    const tarjeta = obtenerTarjeta(titulo)
+
+    fireEvent.click(obtenerBotonAgregar(tarjeta))
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Carrito, 1 productos',
+      }),
+    )
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Finalizar pedido' }),
+    )
+
+    expect(
+      await screen.findByText(
+        'La finalización de pedidos todavía no está disponible.',
+      ),
+    ).toBeTruthy()
   })
 
   it('mantiene deshabilitada la adición de una variante agotada', async () => {
@@ -204,17 +327,14 @@ describe('Casos límite del catálogo', () => {
 
     render(<App />)
 
-    const titulo = await screen.findByRole('heading', {
-      name: 'Producto de prueba',
-    })
-    const tarjeta = titulo.closest('article') as HTMLElement
-    const contenidoTarjeta = within(tarjeta)
+    const titulo = await esperarProducto()
+    const tarjeta = obtenerTarjeta(titulo)
 
     expect(
-      contenidoTarjeta.getByText('Agotado', { selector: 'p' }),
+      tarjeta.getByText('Agotado', { selector: 'p' }),
     ).toBeTruthy()
 
-    const agregar = contenidoTarjeta.getByRole('button', {
+    const agregar = tarjeta.getByRole('button', {
       name: 'Agregar Producto de prueba al carrito',
     })
 
@@ -224,8 +344,11 @@ describe('Casos límite del catálogo', () => {
     fireEvent.click(agregar)
 
     expect(
-      screen.getByRole('button', { name: 'Carrito, 0 productos' }),
+      screen.getByRole('button', {
+        name: 'Carrito, 0 productos',
+      }),
     ).toBeTruthy()
+
     expect(screen.queryByRole('status')).toBeNull()
   })
 
@@ -244,7 +367,7 @@ describe('Casos límite del catálogo', () => {
 
     render(<App />)
 
-    await screen.findByRole('heading', { name: 'Producto de prueba' })
+    await esperarProducto()
 
     expect(
       screen.getByText('Un dulce preparado para disfrutar.'),
@@ -257,19 +380,27 @@ describe('Casos límite del catálogo', () => {
     render(<App />)
 
     expect(await screen.findByRole('alert')).toBeTruthy()
+
     expect(
-      screen.getByRole('heading', { name: 'No pudimos cargar el catálogo' }),
+      screen.getByRole('heading', {
+        name: 'No pudimos cargar el catálogo',
+      }),
     ).toBeTruthy()
   })
 
   it('muestra el estado de error cuando la respuesta JSON no tiene el formato esperado', async () => {
-    vi.mocked(fetch).mockResolvedValueOnce(respuesta({ datos: [] }))
+    vi.mocked(fetch).mockResolvedValueOnce(
+      respuesta({ datos: [] }),
+    )
 
     render(<App />)
 
     expect(await screen.findByRole('alert')).toBeTruthy()
+
     expect(
-      screen.getByRole('heading', { name: 'No pudimos cargar el catálogo' }),
+      screen.getByRole('heading', {
+        name: 'No pudimos cargar el catálogo',
+      }),
     ).toBeTruthy()
   })
 
@@ -296,19 +427,27 @@ describe('Casos límite del catálogo', () => {
 
     render(<App />)
 
-    await screen.findByRole('heading', { name: 'Producto de prueba' })
+    await esperarProducto()
 
     expect(screen.getAllByRole('article')).toHaveLength(1)
+
     expect(
-      screen.queryByRole('heading', { name: 'Producto inválido' }),
+      screen.queryByRole('heading', {
+        name: 'Producto inválido',
+      }),
     ).toBeNull()
+
     expect(
-      screen.queryByRole('heading', { name: 'Producto sin variantes' }),
+      screen.queryByRole('heading', {
+        name: 'Producto sin variantes',
+      }),
     ).toBeNull()
   })
 
   it('muestra el catálogo vacío cuando la API devuelve una lista vacía', async () => {
-    vi.mocked(fetch).mockResolvedValueOnce(respuesta({ productos: [] }))
+    vi.mocked(fetch).mockResolvedValueOnce(
+      respuesta({ productos: [] }),
+    )
 
     render(<App />)
 
@@ -317,6 +456,7 @@ describe('Casos límite del catálogo', () => {
         name: 'No encontramos productos',
       }),
     ).toBeTruthy()
+
     expect(screen.queryAllByRole('article')).toHaveLength(0)
   })
 
@@ -361,13 +501,18 @@ describe('Casos límite del catálogo', () => {
     expect(screen.getAllByText('$0.00')).toHaveLength(2)
 
     fireEvent.change(
-      screen.getByRole('combobox', { name: 'Ordenar productos' }),
+      screen.getByRole('combobox', {
+        name: 'Ordenar productos',
+      }),
       { target: { value: 'precio-menor' } },
     )
 
     expect(
-      screen.getByRole('heading', { name: 'Producto con precio negativo' }),
+      screen.getByRole('heading', {
+        name: 'Producto con precio negativo',
+      }),
     ).toBeTruthy()
+
     expect(screen.getAllByText('$0.00')).toHaveLength(2)
   })
 
@@ -405,27 +550,36 @@ describe('Casos límite del catálogo', () => {
 
     render(<App />)
 
-    await screen.findByRole('heading', { name: 'Producto barato' })
+    await screen.findByRole('heading', {
+      name: 'Producto barato',
+    })
 
     fireEvent.change(
-      screen.getByRole('combobox', { name: 'Ordenar productos' }),
+      screen.getByRole('combobox', {
+        name: 'Ordenar productos',
+      }),
       { target: { value: 'precio-mayor' } },
     )
 
     const tarjetas = screen.getAllByRole('article')
 
     expect(
-      within(tarjetas[0]).getByRole('heading', { name: 'Producto caro' }),
+      within(tarjetas[0]).getByRole('heading', {
+        name: 'Producto caro',
+      }),
     ).toBeTruthy()
+
     expect(
-      within(tarjetas[1]).getByRole('heading', { name: 'Producto barato' }),
+      within(tarjetas[1]).getByRole('heading', {
+        name: 'Producto barato',
+      }),
     ).toBeTruthy()
   })
 
   it('muestra el estado vacío cuando la búsqueda no encuentra coincidencias y lo restaura al limpiar', async () => {
     render(<App />)
 
-    await screen.findByRole('heading', { name: 'Producto de prueba' })
+    await esperarProducto()
 
     const busqueda = screen.getByRole('textbox', {
       name: 'Buscar productos',
@@ -436,34 +590,42 @@ describe('Casos límite del catálogo', () => {
     })
 
     expect(
-      screen.queryByRole('heading', { name: 'Producto de prueba' }),
+      screen.queryByRole('heading', {
+        name: 'Producto de prueba',
+      }),
     ).toBeNull()
+
     expect(
-      screen.getByRole('heading', { name: 'No encontramos productos' }),
+      screen.getByRole('heading', {
+        name: 'No encontramos productos',
+      }),
     ).toBeTruthy()
 
     fireEvent.change(busqueda, { target: { value: '' } })
 
-    expect(
-      await screen.findByRole('heading', { name: 'Producto de prueba' }),
-    ).toBeTruthy()
+    expect(await esperarProducto()).toBeTruthy()
   })
 
   it('abre y cierra el panel de notificaciones con el botón de notificaciones', async () => {
     render(<App />)
 
-    await screen.findByRole('heading', { name: 'Producto de prueba' })
+    await esperarProducto()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Notificaciones' }))
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Notificaciones' }),
+    )
 
     expect(
       screen.getByRole('heading', { name: 'Notificaciones' }),
     ).toBeTruthy()
+
     expect(
       screen.getByText('No tienes notificaciones nuevas.'),
     ).toBeTruthy()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Notificaciones' }))
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Notificaciones' }),
+    )
 
     expect(
       screen.queryByRole('heading', { name: 'Notificaciones' }),
@@ -473,52 +635,72 @@ describe('Casos límite del catálogo', () => {
   it('cierra el panel de notificaciones mediante el botón de cierre', async () => {
     render(<App />)
 
-    await screen.findByRole('heading', { name: 'Producto de prueba' })
+    await esperarProducto()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Notificaciones' }))
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Notificaciones' }),
+    )
 
     expect(
       screen.getByText('No tienes notificaciones nuevas.'),
     ).toBeTruthy()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Cerrar panel' }))
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Cerrar panel' }),
+    )
 
     expect(
       screen.queryByText('No tienes notificaciones nuevas.'),
     ).toBeNull()
-    expect(screen.queryByRole('button', { name: 'Cerrar panel' })).toBeNull()
+
+    expect(
+      screen.queryByRole('button', { name: 'Cerrar panel' }),
+    ).toBeNull()
   })
 
   it('abre el diálogo de autenticación cuando no hay una sesión iniciada', async () => {
     render(<App />)
 
-    await screen.findByRole('heading', { name: 'Producto de prueba' })
+    await esperarProducto()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Abrir perfil' }))
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Abrir perfil' }),
+    )
 
     expect(await screen.findByRole('dialog')).toBeTruthy()
+
     expect(
-      screen.getByRole('heading', { name: 'Bienvenido de nuevo' }),
+      screen.getByRole('heading', {
+        name: 'Bienvenido de nuevo',
+      }),
     ).toBeTruthy()
+
     expect(
       screen.getByText('Inicia sesión para continuar.'),
     ).toBeTruthy()
+
     expect(
-      screen.getByRole('button', { name: 'Cerrar autenticación' }),
+      screen.getByRole('button', {
+        name: 'Cerrar autenticación',
+      }),
     ).toBeTruthy()
   })
 
   it('cierra el diálogo de autenticación sin iniciar sesión', async () => {
     render(<App />)
 
-    await screen.findByRole('heading', { name: 'Producto de prueba' })
+    await esperarProducto()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Abrir perfil' }))
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Abrir perfil' }),
+    )
 
     await screen.findByRole('dialog')
 
     fireEvent.click(
-      screen.getByRole('button', { name: 'Cerrar autenticación' }),
+      screen.getByRole('button', {
+        name: 'Cerrar autenticación',
+      }),
     )
 
     expect(screen.queryByRole('dialog')).toBeNull()
@@ -527,48 +709,128 @@ describe('Casos límite del catálogo', () => {
   it('activa y desactiva el filtro de favoritos', async () => {
     render(<App />)
 
-    await screen.findByRole('heading', { name: 'Producto de prueba' })
+    await esperarProducto()
 
-    const botonFavoritos = screen.getByRole('button', { name: /Favoritos/ })
+    const botonFavoritos = screen.getByRole('button', {
+      name: /Favoritos/,
+    })
 
     fireEvent.click(botonFavoritos)
 
     expect(
       screen.getByRole('heading', { name: 'Mis favoritos' }),
     ).toBeTruthy()
+
     expect(
-      screen.queryByRole('heading', { name: 'Producto de prueba' }),
+      screen.queryByRole('heading', {
+        name: 'Producto de prueba',
+      }),
     ).toBeNull()
 
     fireEvent.click(botonFavoritos)
 
     expect(
-      screen.getByRole('heading', { name: 'Nuestros productos' }),
+      screen.getByRole('heading', {
+        name: 'Nuestros productos',
+      }),
     ).toBeTruthy()
+
+    expect(await esperarProducto()).toBeTruthy()
+  })
+
+  it('muestra el mensaje específico cuando no hay favoritos guardados', async () => {
+    render(<App />)
+
+    await esperarProducto()
+
+    fireEvent.click(
+      screen.getByRole('button', { name: /Favoritos/ }),
+    )
+
     expect(
-      await screen.findByRole('heading', { name: 'Producto de prueba' }),
+      screen.getByRole('heading', {
+        name: 'Aún no tienes favoritos',
+      }),
+    ).toBeTruthy()
+
+    expect(
+      screen.getByText(
+        'Guarda productos con el corazón para encontrarlos aquí.',
+      ),
+    ).toBeTruthy()
+
+    expect(
+      screen.getByRole('button', {
+        name: 'Ver todos los productos',
+      }),
     ).toBeTruthy()
   })
 
   it('restablece los filtros al volver a Inicio', async () => {
     render(<App />)
 
-    await screen.findByRole('heading', { name: 'Producto de prueba' })
+    await esperarProducto()
 
-    fireEvent.click(screen.getByRole('button', { name: /Favoritos/ }))
+    fireEvent.click(
+      screen.getByRole('button', { name: /Favoritos/ }),
+    )
 
     expect(
       screen.getByRole('heading', { name: 'Mis favoritos' }),
     ).toBeTruthy()
 
-    fireEvent.click(screen.getByRole('link', { name: /Inicio/ }))
+    fireEvent.click(
+      screen.getByRole('link', { name: /Inicio/ }),
+    )
 
     expect(
-      screen.getByRole('heading', { name: 'Nuestros productos' }),
+      screen.getByRole('heading', {
+        name: 'Nuestros productos',
+      }),
     ).toBeTruthy()
+
+    expect(await esperarProducto()).toBeTruthy()
+  })
+
+  it('restablece los filtros desde el mensaje de catálogo vacío', async () => {
+    render(<App />)
+
+    await esperarProducto()
+
+    fireEvent.change(
+      screen.getByRole('textbox', {
+        name: 'Buscar productos',
+      }),
+      { target: { value: 'sin coincidencias' } },
+    )
+
     expect(
-      await screen.findByRole('heading', { name: 'Producto de prueba' }),
+      screen.getByRole('heading', {
+        name: 'No encontramos productos',
+      }),
     ).toBeTruthy()
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Ver todos los productos',
+      }),
+    )
+
+    expect(await esperarProducto()).toBeTruthy()
+  })
+
+  it('ejecuta la navegación del enlace Volver arriba', async () => {
+    render(<App />)
+
+    await esperarProducto()
+
+    const enlace = screen.getByRole('link', {
+      name: /Volver arriba/,
+    })
+
+    fireEvent.click(enlace)
+
+    expect(enlace).toBeTruthy()
   })
 
   it('no muestra el error si una petición cancelada termina con rechazo', async () => {
@@ -605,7 +867,9 @@ describe('Casos límite del catálogo', () => {
     await Promise.resolve()
 
     expect(
-      screen.queryByRole('heading', { name: 'No pudimos cargar el catálogo' }),
+      screen.queryByRole('heading', {
+        name: 'No pudimos cargar el catálogo',
+      }),
     ).toBeNull()
   })
 })
@@ -627,7 +891,10 @@ describe('Validación de adiciones al carrito', () => {
 
   it('rechaza variantes sin existencias', () => {
     expect(
-      validarAdicionCarrito({ ...variante, stockDisponible: 0 }, 0),
+      validarAdicionCarrito(
+        { ...variante, stockDisponible: 0 },
+        0,
+      ),
     ).toBe('Esta variante no tiene existencias disponibles.')
   })
 
