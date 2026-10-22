@@ -4,13 +4,16 @@ on:
   push:
     branches:
       - main
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ci-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -40,7 +43,6 @@ jobs:
 
   backend:
     name: Backend
-    needs: frontend
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -57,7 +59,6 @@ jobs:
 
   test-frontend:
     name: Frontend Unit Tests and Coverage
-    needs: backend
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -80,7 +81,6 @@ jobs:
 
   test-backend:
     name: Backend Unit Tests and Coverage
-    needs: test-frontend
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -103,7 +103,6 @@ jobs:
 
   integration:
     name: HTTP Integration Tests
-    needs: test-backend
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -120,8 +119,7 @@ jobs:
 
   docker:
     name: Docker
-    if: github.ref == 'refs/heads/main'
-    needs: integration
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -137,8 +135,8 @@ jobs:
 
   sonarcloud:
     name: SonarCloud
-    if: github.ref == 'refs/heads/main'
-    needs: docker
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [test-frontend, test-backend]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

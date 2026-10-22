@@ -1,6 +1,41 @@
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
 import App from '../src/App'
+
+const cartMocks = vi.hoisted(() => ({
+  errorCambioCantidad: null as string | null,
+  errorAgregarVariante: null as string | null,
+}))
+
+vi.mock('../src/modules/cart/hooks/useCart', async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import('../src/modules/cart/hooks/useCart')>()
+
+  return {
+    ...actual,
+    useCart: (...args: Parameters<typeof actual.useCart>) => {
+      const carrito = actual.useCart(...args)
+
+      if (
+        cartMocks.errorCambioCantidad !== null ||
+        cartMocks.errorAgregarVariante !== null
+      ) {
+        return {
+          ...carrito,
+          ...(cartMocks.errorCambioCantidad !== null
+            ? { cambiarCantidad: () => cartMocks.errorCambioCantidad }
+            : {}),
+          ...(cartMocks.errorAgregarVariante !== null
+            ? { agregarVariante: () => cartMocks.errorAgregarVariante }
+            : {}),
+        }
+      }
+
+      return carrito
+    },
+  }
+})
 
 const productosPrueba = [
   {
@@ -80,9 +115,7 @@ const productosPrueba = [
   },
 ]
 
-function prepararRespuestaCatalogo(
-  productos = productosPrueba,
-): Response {
+function prepararRespuestaCatalogo(productos = productosPrueba): Response {
   return {
     ok: true,
     status: 200,
@@ -98,9 +131,14 @@ afterEach(() => {
   cleanup()
   vi.unstubAllGlobals()
   vi.restoreAllMocks()
+  cartMocks.errorCambioCantidad = null
+  cartMocks.errorAgregarVariante = null
 })
 
 beforeEach(() => {
+  cartMocks.errorCambioCantidad = null
+  cartMocks.errorAgregarVariante = null
+
   vi.stubGlobal(
     'fetch',
     vi.fn().mockResolvedValue(prepararRespuestaCatalogo()),
@@ -115,14 +153,14 @@ describe('Catálogo de Dulce Encanto', () => {
       screen.getByRole('link', { name: /Dulce Encanto, inicio/i }),
     ).toBeTruthy()
     expect(
-      screen.getByRole('heading', { name: 'Nuestros productos' }),
-    ).toBeTruthy()
-    expect(
       screen.getByRole('navigation', { name: 'Navegación principal' }),
     ).toBeTruthy()
 
     await esperarCatalogo()
 
+    expect(
+      screen.getByRole('heading', { name: 'Nuestros productos' }),
+    ).toBeTruthy()
     expect(screen.getAllByRole('article')).toHaveLength(5)
     expect(
       screen.getByRole('heading', { name: 'Galletas con chispas' }),
@@ -177,6 +215,33 @@ describe('Catálogo de Dulce Encanto', () => {
     )
 
     await esperarCatalogo()
+    expect(screen.getAllByRole('article')).toHaveLength(5)
+    expect((busqueda as HTMLInputElement).value).toBe('')
+  })
+
+  it('restablece la búsqueda al pulsar la marca de Dulce Encanto', async () => {
+    render(<App />)
+    await esperarCatalogo()
+
+    const busqueda = screen.getByRole('textbox', {
+      name: 'Buscar productos',
+    })
+
+    fireEvent.change(busqueda, {
+      target: { value: 'producto inexistente' },
+    })
+
+    expect(
+      screen.getByRole('heading', { name: 'No encontramos productos' }),
+    ).toBeTruthy()
+
+    fireEvent.click(
+      screen.getByRole('link', { name: 'Dulce Encanto, inicio' }),
+    )
+
+    expect(
+      screen.getByRole('heading', { name: 'Nuestros productos' }),
+    ).toBeTruthy()
     expect(screen.getAllByRole('article')).toHaveLength(5)
     expect((busqueda as HTMLInputElement).value).toBe('')
   })
@@ -305,6 +370,40 @@ describe('Catálogo de Dulce Encanto', () => {
     expect(screen.getAllByRole('article')).toHaveLength(5)
   })
 
+  it('desplaza al catálogo cuando se navega a Ofertas', async () => {
+    const desplazamiento = vi.fn()
+
+    Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
+      configurable: true,
+      value: desplazamiento,
+    })
+
+    render(<App />)
+    await esperarCatalogo()
+
+    fireEvent.click(screen.getByRole('link', { name: 'Ofertas' }))
+
+    expect(desplazamiento).toHaveBeenCalledWith({
+      behavior: 'auto',
+      block: 'start',
+    })
+  })
+
+  it('vuelve al inicio al seleccionar Inicio', async () => {
+    const desplazamiento = vi.fn()
+    vi.stubGlobal('scrollTo', desplazamiento)
+
+    render(<App />)
+    await esperarCatalogo()
+
+    fireEvent.click(screen.getByRole('link', { name: 'Inicio' }))
+
+    expect(desplazamiento).toHaveBeenCalledWith({
+      top: 0,
+      behavior: 'auto',
+    })
+  })
+
   it('añade productos al carrito y permite cerrar el aviso', async () => {
     render(<App />)
     await esperarCatalogo()
@@ -352,6 +451,50 @@ describe('Catálogo de Dulce Encanto', () => {
     ).toBeTruthy()
   })
 
+  it('muestra el error devuelto al agregar un producto al carrito', async () => {
+    const mensajeError = 'No hay existencias suficientes para agregar el producto.'
+    cartMocks.errorAgregarVariante = mensajeError
+
+    render(<App />)
+    await esperarCatalogo()
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Agregar Caramelos surtidos al carrito',
+      }),
+    )
+
+    expect(screen.getByText(mensajeError)).toBeTruthy()
+  })
+
+  it('muestra el error al fallar el cambio de cantidad en el carrito', async () => {
+    const mensajeError =
+      'No puedes superar las existencias disponibles.'
+
+    cartMocks.errorCambioCantidad = mensajeError
+
+    render(<App />)
+    await esperarCatalogo()
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Agregar Caramelos surtidos al carrito',
+      }),
+    )
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Carrito, 1 productos' }),
+    )
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Aumentar cantidad de Caramelos surtidos',
+      }),
+    )
+
+    expect(screen.getByText(mensajeError)).toBeTruthy()
+  })
+
   it('informa cuando el carrito está vacío', async () => {
     render(<App />)
     await esperarCatalogo()
@@ -365,6 +508,27 @@ describe('Catálogo de Dulce Encanto', () => {
     ).toBeTruthy()
     expect(
       screen.getByRole('button', { name: 'Explorar catálogo' }),
+    ).toBeTruthy()
+  })
+
+  it('regresa al catálogo desde el carrito vacío', async () => {
+    render(<App />)
+    await esperarCatalogo()
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Carrito, 0 productos' }),
+    )
+
+    expect(
+      screen.getByRole('heading', { name: 'Tu carrito está vacío' }),
+    ).toBeTruthy()
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Explorar catálogo' }),
+    )
+
+    expect(
+      screen.getByRole('heading', { name: 'Nuestros productos' }),
     ).toBeTruthy()
   })
 
@@ -402,7 +566,6 @@ describe('Catálogo de Dulce Encanto', () => {
     )
 
     expect(await screen.findByRole('dialog')).toBeTruthy()
-
     expect(
       screen.getByRole('heading', { name: 'Bienvenido de nuevo' }),
     ).toBeTruthy()
@@ -456,5 +619,28 @@ describe('Catálogo de Dulce Encanto', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Reintentar' }))
     expect(screen.getByRole('alert')).toBeTruthy()
+  })
+
+  it('acepta productos válidos sin variantes y no dibuja una tarjeta para ellos', async () => {
+    const productosSinVariantes = [
+      {
+        ...productosPrueba[0]!,
+        variantes: [],
+      },
+    ]
+
+    vi.mocked(fetch).mockResolvedValueOnce(
+      prepararRespuestaCatalogo(productosSinVariantes),
+    )
+
+    render(<App />)
+
+    expect(
+      await screen.findByRole('heading', { name: 'Nuestros productos' }),
+    ).toBeTruthy()
+
+    expect(
+      screen.queryByRole('heading', { name: 'Caramelos surtidos' }),
+    ).toBeNull()
   })
 })
