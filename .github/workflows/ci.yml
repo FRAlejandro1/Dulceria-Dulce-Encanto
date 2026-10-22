@@ -58,3 +58,5 @@ jobs:
       - integration
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     uses: ./.github/workflows/sonarcloud.yml
+    secrets:
+      SONAR_TOKEN_DULCERIA: ${{ secrets.SONAR_TOKEN_DULCERIA }}
