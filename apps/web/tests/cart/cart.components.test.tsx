@@ -1,11 +1,11 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import type { Producto, Variante } from '../src/types/catalogo.types'
-import type { LineaCarrito } from '../src/modules/cart/types/cart.types'
-import CartEmpty from '../src/modules/cart/components/CartEmpty/CartEmpty'
-import CartItem from '../src/modules/cart/components/CartItem/CartItem'
-import CartSummary from '../src/modules/cart/components/CartSummary/CartSummary'
-import CartPanel from '../src/modules/cart/components/CartPanel'
+import type { Producto, Variante } from '../../src/types/catalogo.types'
+import type { LineaCarrito } from '../../src/modules/cart/types/cart.types'
+import CartEmpty from '../../src/modules/cart/components/CartEmpty/CartEmpty'
+import CartItem from '../../src/modules/cart/components/CartItem/CartItem'
+import CartSummary from '../../src/modules/cart/components/CartSummary/CartSummary'
+import CartPanel from '../../src/modules/cart/components/CartPanel'
 
 afterEach(() => {
     cleanup()

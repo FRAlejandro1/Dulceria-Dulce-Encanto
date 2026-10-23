@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import type { Producto, Variante } from '../src/types/catalogo.types'
+import type { Producto, Variante } from '../../src/types/catalogo.types'
 import {
   calcularCantidadTotal,
   calcularSubtotalCarrito,
   obtenerLineasCarrito,
   obtenerPrecioSeguro,
   validarAdicionCarrito,
-} from '../src/modules/cart/utils/cart.utils'
+} from '../../src/modules/cart/utils/cart.utils'
 
 const varianteBase: Variante = {
   id: 'variante-1',

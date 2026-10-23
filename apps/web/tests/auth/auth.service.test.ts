@@ -4,8 +4,8 @@ import {
     cerrarSesion,
     iniciarSesion,
     registrarUsuario,
-} from '../src/modules/auth/services/auth.service'
-import { RUTAS_AUTENTICACION } from '../src/modules/auth/constants/auth.constants'
+} from '../../src/modules/auth/services/auth.service'
+import { RUTAS_AUTENTICACION } from '../../src/modules/auth/constants/auth.constants'
 
 const usuario = {
     id: 'usuario-1',

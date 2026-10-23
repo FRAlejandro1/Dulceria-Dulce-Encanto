@@ -1,66 +1,30 @@
 import {
   lazy,
   Suspense,
-  useEffect,
-  useMemo,
-  useRef,
   useState,
 } from 'react'
 import './App.css'
 import type {
-  EstadoCarga,
   Producto,
-  RespuestaCatalogo,
   Variante,
 } from './types/catalogo.types'
 import type { UsuarioAutenticado } from './modules/auth/types/auth.types'
+import { useCatalog } from './modules/catalog/hooks/useCatalog'
+import { useCatalogFilters } from './modules/catalog/hooks/useCatalogFilters'
+import { useCatalogNavigation } from './modules/catalog/hooks/useCatalogNavigation'
+import ProductCard from './modules/catalog/components/ProductCard'
 import { useCart } from './modules/cart/hooks/useCart'
 import CartPanel from './modules/cart/components/CartPanel'
 
 const Auth = lazy(() => import('./modules/auth/Auth'))
 
-const IMAGEN_POR_DEFECTO =
-  'https://images.unsplash.com/photo-1558961363-fa8fdf82db35?auto=format&fit=crop&w=700&q=85'
-
-function obtenerPrecio(variante: Variante): number {
-  const precio = Number(variante.precio)
-  return Number.isFinite(precio) && precio >= 0 ? precio : 0
-}
-
-function obtenerPrecioMinimo(producto: Producto): number {
-  if (producto.variantes.length === 0) return Number.POSITIVE_INFINITY
-
-  return Math.min(...producto.variantes.map(obtenerPrecio))
-}
-
-function desplazarAProductos(): void {
-  const elemento = document.getElementById('productos')
-
-  if (typeof elemento?.scrollIntoView === 'function') {
-    elemento.scrollIntoView({
-      behavior: 'auto',
-      block: 'start',
-    })
-  }
-}
-
-function desplazarAlInicio(): void {
-  if (typeof window.scrollTo === 'function') {
-    window.scrollTo({
-      top: 0,
-      behavior: 'auto',
-    })
-  }
-}
-
 function App() {
-  const [productos, setProductos] = useState<Producto[]>([])
-  const [estadoCarga, setEstadoCarga] = useState<EstadoCarga>('cargando')
-  const [busqueda, setBusqueda] = useState('')
-  const [categoria, setCategoria] = useState('Todos')
-  const [orden, setOrden] = useState('destacados')
-  const [favoritos, setFavoritos] = useState<string[]>([])
-  const [verFavoritos, setVerFavoritos] = useState(false)
+  const {
+    productos,
+    estadoCarga,
+    reintentarCarga,
+  } = useCatalog()
+
   const [variantesSeleccionadas, setVariantesSeleccionadas] = useState<
     Record<string, string>
   >({})
@@ -74,7 +38,37 @@ function App() {
   const [usuario, setUsuario] = useState<UsuarioAutenticado | null>(null)
   const [authAbierta, setAuthAbierta] = useState(false)
 
-  const destinoPendiente = useRef(false)
+  const {
+    busqueda,
+    setBusqueda,
+    categoria,
+    setCategoria,
+    orden,
+    setOrden,
+    favoritos,
+    verFavoritos,
+    setVerFavoritos,
+    categorias,
+    productosVisibles,
+    alternarFavorito,
+    restablecerFiltros: restablecerFiltrosCatalogo,
+  } = useCatalogFilters(productos)
+
+  const {
+    restablecerFiltros,
+    navegarAProductos,
+    volverAlInicio,
+    abrirCarrito,
+    cerrarCarrito,
+    alternarFavoritos,
+  } = useCatalogNavigation({
+    vistaCarrito,
+    setVistaCarrito,
+    setPanel,
+    setVerFavoritos,
+    setCategoria,
+    restablecerFiltrosCatalogo,
+  })
 
   const {
     carrito,
@@ -83,115 +77,6 @@ function App() {
     cambiarCantidad,
     eliminarVariante,
   } = useCart(productos)
-
-  useEffect(() => {
-    const controlador = new AbortController()
-
-    async function cargarCatalogo() {
-      setEstadoCarga('cargando')
-
-      try {
-        const respuesta = await fetch('/api/v1/catalog/products', {
-          signal: controlador.signal,
-          headers: { Accept: 'application/json' },
-        })
-
-        if (!respuesta.ok) {
-          throw new Error('No se pudo cargar el catálogo.')
-        }
-
-        const datos: unknown = await respuesta.json()
-
-        if (
-          typeof datos !== 'object' ||
-          datos === null ||
-          !('productos' in datos) ||
-          !Array.isArray((datos as RespuestaCatalogo).productos)
-        ) {
-          throw new Error(
-            'La respuesta del catálogo no tiene el formato esperado.',
-          )
-        }
-
-        const catalogo = (datos as RespuestaCatalogo).productos.filter(
-          (producto): producto is Producto =>
-            typeof producto.id === 'string' &&
-            typeof producto.nombre === 'string' &&
-            typeof producto.categoria?.nombre === 'string' &&
-            typeof producto.categoria?.slug === 'string' &&
-            Array.isArray(producto.variantes),
-        )
-
-        setProductos(catalogo)
-        setEstadoCarga('correcto')
-      } catch {
-        if (!controlador.signal.aborted) {
-          setEstadoCarga('error')
-        }
-      }
-    }
-
-    void cargarCatalogo()
-
-    return () => controlador.abort()
-  }, [])
-
-  useEffect(() => {
-    if (vistaCarrito || !destinoPendiente.current) {
-      return
-    }
-
-    desplazarAProductos()
-    destinoPendiente.current = false
-  }, [vistaCarrito])
-
-  const categorias = useMemo(
-    () => [
-      'Todos',
-      ...Array.from(
-        new Set(productos.map((producto) => producto.categoria.nombre)),
-      ).sort((a, b) => a.localeCompare(b, 'es')),
-    ],
-    [productos],
-  )
-
-  const productosVisibles = useMemo(() => {
-    const texto = busqueda.trim().toLocaleLowerCase('es')
-
-    const lista = productos.filter((producto) => {
-      const coincideTexto =
-        `${producto.nombre} ${producto.descripcion ?? ''}`
-          .toLocaleLowerCase('es')
-          .includes(texto)
-
-      const coincideCategoria =
-        categoria === 'Todos' || producto.categoria.nombre === categoria
-
-      const coincideFavorito =
-        !verFavoritos || favoritos.includes(producto.id)
-
-      return (
-        coincideTexto &&
-        coincideCategoria &&
-        coincideFavorito &&
-        producto.variantes.length > 0
-      )
-    })
-
-    if (orden === 'precio-menor') {
-      return [...lista].sort(
-        (a, b) => obtenerPrecioMinimo(a) - obtenerPrecioMinimo(b),
-      )
-    }
-
-    if (orden === 'precio-mayor') {
-      return [...lista].sort(
-        (a, b) => obtenerPrecioMinimo(b) - obtenerPrecioMinimo(a),
-      )
-    }
-
-    return lista
-  }, [busqueda, categoria, favoritos, orden, productos, verFavoritos])
 
   function abrirAutenticacion() {
     setPanel('ninguno')
@@ -202,7 +87,9 @@ function App() {
     setAuthAbierta(false)
   }
 
-  function manejarAutenticacion(usuarioAutenticado: UsuarioAutenticado) {
+  function manejarAutenticacion(
+    usuarioAutenticado: UsuarioAutenticado,
+  ) {
     setUsuario(usuarioAutenticado)
     setAuthAbierta(false)
     setAviso(`Sesión iniciada como ${usuarioAutenticado.nombre}.`)
@@ -223,14 +110,6 @@ function App() {
     return (
       producto.variantes.find((variante) => variante.id === idSeleccionado) ??
       producto.variantes[0]
-    )
-  }
-
-  function alternarFavorito(id: string) {
-    setFavoritos((actuales) =>
-      actuales.includes(id)
-        ? actuales.filter((favorito) => favorito !== id)
-        : [...actuales, id],
     )
   }
 
@@ -262,37 +141,6 @@ function App() {
 
   function finalizarPedidoNoDisponible() {
     setAviso('La finalización de pedidos todavía no está disponible.')
-  }
-
-  function restablecerFiltros() {
-    destinoPendiente.current = false
-    setBusqueda('')
-    setCategoria('Todos')
-    setVerFavoritos(false)
-    setVistaCarrito(false)
-  }
-
-  function navegarAProductos(restablecerCategoria: boolean) {
-    setPanel('ninguno')
-    setVerFavoritos(false)
-
-    if (restablecerCategoria) {
-      setCategoria('Todos')
-    }
-
-    if (vistaCarrito) {
-      destinoPendiente.current = true
-      setVistaCarrito(false)
-      return
-    }
-
-    destinoPendiente.current = false
-    desplazarAProductos()
-  }
-
-  function volverAlInicio() {
-    restablecerFiltros()
-    desplazarAlInicio()
   }
 
   return (
@@ -358,11 +206,7 @@ function App() {
                 ? 'main-nav__item main-nav__item--active'
                 : 'main-nav__item'
             }
-            onClick={() => {
-              destinoPendiente.current = false
-              setVistaCarrito(false)
-              setVerFavoritos((actual) => !actual)
-            }}
+            onClick={alternarFavoritos}
             aria-pressed={verFavoritos}
           >
             Favoritos <span className="nav-count">{favoritos.length}</span>
@@ -391,11 +235,7 @@ function App() {
             className="icon-button cart-button"
             aria-label={`Carrito, ${cantidadCarrito} productos`}
             aria-pressed={vistaCarrito}
-            onClick={() => {
-              setPanel('ninguno')
-              destinoPendiente.current = false
-              setVistaCarrito(true)
-            }}
+            onClick={abrirCarrito}
           >
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path d="M3 4h2l2.2 11.2a2 2 0 0 0 2 1.6h7.9a2 2 0 0 0 1.9-1.4L21 8H6M10 21h.01M18 21h.01" />
@@ -491,10 +331,7 @@ function App() {
         <CartPanel
           productos={productos}
           carrito={carrito}
-          onCerrar={() => {
-            destinoPendiente.current = false
-            setVistaCarrito(false)
-          }}
+          onCerrar={cerrarCarrito}
           onCambiarCantidad={manejarCambioCantidad}
           onEliminar={eliminarVariante}
           onFinalizarPedido={finalizarPedidoNoDisponible}
@@ -585,7 +422,7 @@ function App() {
               <button
                 type="button"
                 className="empty-state__reset"
-                onClick={() => window.location.reload()}
+                onClick={reintentarCarga}
               >
                 Reintentar
               </button>
@@ -602,107 +439,22 @@ function App() {
 
                 if (!variante) return null
 
-                const precio = obtenerPrecio(variante)
-                const favorito = favoritos.includes(producto.id)
-                const stock = variante.stockDisponible
-                const cantidadEnCarrito = carrito[variante.id] ?? 0
-                const sinStock = stock <= 0
-                const limiteAlcanzado = cantidadEnCarrito >= stock
-
                 return (
-                  <article className="product-card" key={producto.id}>
-                    <div className="product-card__visual">
-                      <img
-                        className="product-card__image"
-                        src={producto.imagenUrl ?? IMAGEN_POR_DEFECTO}
-                        alt={producto.nombre}
-                        loading="lazy"
-                      />
-
-                      <button
-                        type="button"
-                        className={
-                          favorito
-                            ? 'product-card__favorite product-card__favorite--active'
-                            : 'product-card__favorite'
-                        }
-                        aria-label={
-                          favorito
-                            ? `Quitar ${producto.nombre} de favoritos`
-                            : `Añadir ${producto.nombre} a favoritos`
-                        }
-                        aria-pressed={favorito}
-                        onClick={() => alternarFavorito(producto.id)}
-                      >
-                        {favorito ? '♥' : '♡'}
-                      </button>
-                    </div>
-
-                    <div className="product-card__body">
-                      <p className="product-card__category">
-                        {producto.categoria.nombre}
-                      </p>
-
-                      <h2 className="product-card__name">{producto.nombre}</h2>
-
-                      <p className="product-card__description">
-                        {producto.descripcion ||
-                          'Un dulce preparado para disfrutar.'}
-                      </p>
-
-                      {producto.variantes.length > 1 && (
-                        <label className="variant-control">
-                          Presentación
-                          <select
-                            aria-label={`Presentación de ${producto.nombre}`}
-                            value={variante.id}
-                            onChange={(evento) =>
-                              setVariantesSeleccionadas((actual) => ({
-                                ...actual,
-                                [producto.id]: evento.target.value,
-                              }))
-                            }
-                          >
-                            {producto.variantes.map((opcion) => (
-                              <option key={opcion.id} value={opcion.id}>
-                                {opcion.nombre} — $
-                                {obtenerPrecio(opcion).toFixed(2)}
-                                {' · Stock: '}
-                                {opcion.stockDisponible}
-                              </option>
-                            ))}
-                          </select>
-                        </label>
-                      )}
-
-                      <p className="product-card__stock">
-                        {stock > 0 ? `${stock} disponibles` : 'Agotado'}
-                      </p>
-
-                      <div className="product-card__bottom">
-                        <strong className="product-card__price">
-                          ${precio.toFixed(2)}
-                        </strong>
-
-                        <button
-                          type="button"
-                          className="product-card__add"
-                          onClick={() => agregarAlCarrito(producto)}
-                          disabled={sinStock || limiteAlcanzado}
-                          aria-label={`Agregar ${producto.nombre} al carrito`}
-                        >
-                          <span aria-hidden="true">＋</span>
-                          <span>
-                            {sinStock
-                              ? 'Agotado'
-                              : limiteAlcanzado
-                                ? 'Stock completo'
-                                : 'Agregar'}
-                          </span>
-                        </button>
-                      </div>
-                    </div>
-                  </article>
+                  <ProductCard
+                    key={producto.id}
+                    producto={producto}
+                    variante={variante}
+                    favorito={favoritos.includes(producto.id)}
+                    cantidadEnCarrito={carrito[variante.id] ?? 0}
+                    onCambiarVariante={(productoId, varianteId) =>
+                      setVariantesSeleccionadas((actual) => ({
+                        ...actual,
+                        [productoId]: varianteId,
+                      }))
+                    }
+                    onAlternarFavorito={alternarFavorito}
+                    onAgregar={agregarAlCarrito}
+                  />
                 )
               })}
             </section>

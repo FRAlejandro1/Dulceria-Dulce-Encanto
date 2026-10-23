@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
     validarInicioSesion,
     validarRegistro,
-} from '../src/modules/auth/schemas/auth.schemas'
+} from '../../src/modules/auth/schemas/auth.schemas'
 
 describe('validarInicioSesion', () => {
     it('normaliza el correo y conserva la contraseña', () => {

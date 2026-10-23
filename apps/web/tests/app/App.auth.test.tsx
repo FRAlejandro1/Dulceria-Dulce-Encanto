@@ -8,7 +8,7 @@ import {
     vi,
 } from 'vitest'
 
-import App from '../src/App'
+import App from '../../src/App'
 
 const usuarioPrueba = {
     id: 'usuario-1',

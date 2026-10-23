@@ -13,8 +13,8 @@ import {
   it,
   vi,
 } from 'vitest'
-import App from '../src/App'
-import { validarAdicionCarrito } from '../src/utils/carrito.utils'
+import App from '../../src/App'
+import { validarAdicionCarrito } from '../../src/utils/carrito.utils'
 
 const productosBase = [
   {

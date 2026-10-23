@@ -1,13 +1,13 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import AuthMessage from '../src/modules/auth/components/AuthMessage'
-import LoginForm from '../src/modules/auth/components/LoginForm'
-import RegisterForm from '../src/modules/auth/components/RegisterForm'
+import AuthMessage from '../../src/modules/auth/components/AuthMessage'
+import LoginForm from '../../src/modules/auth/components/LoginForm'
+import RegisterForm from '../../src/modules/auth/components/RegisterForm'
 import type {
     DatosInicioSesion,
     DatosRegistro,
-} from '../src/modules/auth/types/auth.types'
+} from '../../src/modules/auth/types/auth.types'
 
 afterEach(() => {
     cleanup()
