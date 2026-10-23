@@ -8,8 +8,8 @@ import {
 } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import Auth from '../src/modules/auth/Auth'
-import type { UsuarioAutenticado } from '../src/modules/auth/types/auth.types'
+import Auth from '../../src/modules/auth/Auth'
+import type { UsuarioAutenticado } from '../../src/modules/auth/types/auth.types'
 
 const authMocks = vi.hoisted(() => ({
   useAuth: vi.fn(),
@@ -20,7 +20,7 @@ const authMocks = vi.hoisted(() => ({
   estado: {} as Record<string, unknown>,
 }))
 
-vi.mock('../src/modules/auth/hooks/useAuth', () => ({
+vi.mock('../../src/modules/auth/hooks/useAuth', () => ({
   useAuth: authMocks.useAuth,
 }))
 
@@ -79,6 +79,40 @@ function obtenerPestana(nombre: 'Crear cuenta' | 'Iniciar sesión') {
   }
 
   return boton
+}
+
+function obtenerFondo() {
+  return screen.getByRole('button', {
+    name: 'Cerrar el diálogo',
+  })
+}
+
+/**
+ * Ejecuta el manejador onClick registrado por React.
+ * Permite probar la condición interna incluso si el elemento
+ * está deshabilitado y un clic normal no ejecutaría el manejador.
+ */
+function ejecutarManejadorClick(elemento: HTMLElement) {
+  const claveProps = Object.keys(elemento).find((clave) =>
+    clave.startsWith('__reactProps$'),
+  )
+
+  if (!claveProps) {
+    throw new Error('No se encontraron las propiedades de React.')
+  }
+
+  const props = (
+    elemento as unknown as Record<
+      string,
+      { onClick?: () => void }
+    >
+  )[claveProps]
+
+  if (typeof props.onClick !== 'function') {
+    throw new Error('El elemento no tiene un manejador onClick.')
+  }
+
+  props.onClick()
 }
 
 function completarFormularioRegistro() {
@@ -207,9 +241,8 @@ describe('Auth', () => {
 
   it('cierra el diálogo al pulsar el fondo exterior', () => {
     const { onClose } = renderizarAuth()
-    const fondo = screen.getByRole('dialog').parentElement!
 
-    fireEvent.mouseDown(fondo)
+    fireEvent.click(obtenerFondo())
 
     expect(onClose).toHaveBeenCalledOnce()
   })
@@ -226,9 +259,26 @@ describe('Auth', () => {
     authMocks.estado.procesando = true
 
     const { onClose } = renderizarAuth()
-    const fondo = screen.getByRole('dialog').parentElement!
+    const fondo = obtenerFondo()
 
-    fireEvent.mouseDown(fondo)
+    expect(fondo.hasAttribute('disabled')).toBe(true)
+
+    ejecutarManejadorClick(fondo)
+
+    expect(onClose).not.toHaveBeenCalled()
+  })
+
+  it('no cierra el diálogo desde el botón de cierre mientras procesa', () => {
+    authMocks.estado.procesando = true
+
+    const { onClose } = renderizarAuth()
+    const boton = screen.getByRole('button', {
+      name: 'Cerrar autenticación',
+    })
+
+    expect(boton.hasAttribute('disabled')).toBe(true)
+
+    ejecutarManejadorClick(boton)
 
     expect(onClose).not.toHaveBeenCalled()
   })

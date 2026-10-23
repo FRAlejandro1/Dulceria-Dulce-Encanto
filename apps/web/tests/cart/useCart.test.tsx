@@ -1,7 +1,7 @@
 import { act, renderHook } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
-import type { Producto, Variante } from '../src/types/catalogo.types'
-import { useCart } from '../src/modules/cart/hooks/useCart'
+import type { Producto, Variante } from '../../src/types/catalogo.types'
+import { useCart } from '../../src/modules/cart/hooks/useCart'
 
 const variante: Variante = {
   id: 'variante-1',

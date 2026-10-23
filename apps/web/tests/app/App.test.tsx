@@ -1,16 +1,16 @@
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import App from '../src/App'
+import App from '../../src/App'
 
 const cartMocks = vi.hoisted(() => ({
   errorCambioCantidad: null as string | null,
   errorAgregarVariante: null as string | null,
 }))
 
-vi.mock('../src/modules/cart/hooks/useCart', async (importOriginal) => {
+vi.mock('../../src/modules/cart/hooks/useCart', async (importOriginal) => {
   const actual =
-    await importOriginal<typeof import('../src/modules/cart/hooks/useCart')>()
+    await importOriginal<typeof import('../../src/modules/cart/hooks/useCart')>()
 
   return {
     ...actual,
@@ -618,7 +618,12 @@ describe('Catálogo de Dulce Encanto', () => {
     expect(screen.getByRole('button', { name: 'Reintentar' })).toBeTruthy()
 
     fireEvent.click(screen.getByRole('button', { name: 'Reintentar' }))
-    expect(screen.getByRole('alert')).toBeTruthy()
+
+    expect(
+      await screen.findByRole('heading', {
+        name: 'Nuestros productos',
+      }),
+    ).toBeTruthy()
   })
 
   it('acepta productos válidos sin variantes y no dibuja una tarjeta para ellos', async () => {

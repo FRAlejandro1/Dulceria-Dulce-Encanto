@@ -1,4 +1,3 @@
-
 import { useEffect, useRef, useState } from 'react'
 
 import { MENSAJES_AUTENTICACION } from './constants/auth.constants'
@@ -27,7 +26,17 @@ export default function Auth({
   const [modo, setModo] = useState<ModoAutenticacion>('login')
   const [mensajeExito, setMensajeExito] = useState('')
   const [mensajeCuenta, setMensajeCuenta] = useState('')
-  const { usuario: usuarioSesion, procesando, error, iniciarSesion, registrarUsuario, cerrarSesion, limpiarError } = useAuth()
+
+  const {
+    usuario: usuarioSesion,
+    procesando,
+    error,
+    iniciarSesion,
+    registrarUsuario,
+    cerrarSesion,
+    limpiarError,
+  } = useAuth()
+
   const notificarAutenticacion = useRef(onAuthenticated)
 
   useEffect(() => {
@@ -50,7 +59,10 @@ export default function Auth({
     }
 
     window.addEventListener('keydown', manejarTecla)
-    return () => window.removeEventListener('keydown', manejarTecla)
+
+    return () => {
+      window.removeEventListener('keydown', manejarTecla)
+    }
   }, [open, procesando, onClose])
 
   if (!open) return null
@@ -62,7 +74,9 @@ export default function Auth({
     setModo(nuevoModo)
   }
 
-  async function manejarRegistro(datos: Parameters<typeof registrarUsuario>[0]) {
+  async function manejarRegistro(
+    datos: Parameters<typeof registrarUsuario>[0],
+  ) {
     const correcto = await registrarUsuario(datos)
 
     if (correcto) {
@@ -86,12 +100,18 @@ export default function Auth({
   const usuarioActual = usuario ?? usuarioSesion
 
   return (
-    <div
-      className="auth-overlay"
-      onMouseDown={(evento) => {
-        if (evento.target === evento.currentTarget && !procesando) onClose()
-      }}
-    >
+    <div className="auth-overlay">
+      <button
+        className="auth-overlay__backdrop"
+        type="button"
+        aria-label="Cerrar el diálogo"
+        onClick={() => {
+          if (!procesando) onClose()
+        }}
+        disabled={procesando}
+        tabIndex={-1}
+      />
+
       <section
         className="auth-dialog"
         role="dialog"
@@ -103,14 +123,18 @@ export default function Auth({
           className="auth-dialog__close"
           type="button"
           aria-label="Cerrar autenticación"
-          onClick={onClose}
+          onClick={() => {
+            if (!procesando) onClose()
+          }}
           disabled={procesando}
         >
           ×
         </button>
 
         <div className="auth-brand">
-          <span className="auth-brand__mark" aria-hidden="true">DE</span>
+          <span className="auth-brand__mark" aria-hidden="true">
+            DE
+          </span>
           <span>
             <strong>Dulce Encanto</strong>
             <small>Momentos que endulzan</small>
@@ -123,8 +147,11 @@ export default function Auth({
             <p id="auth-description">Has iniciado sesión.</p>
             <p className="auth-account__name">{usuarioActual.nombre}</p>
             <p className="auth-account__email">{usuarioActual.correo}</p>
+
             <AuthMessage mensaje={mensajeCuenta} tipo="exito" />
+
             {error && <AuthMessage mensaje={error} tipo="error" />}
+
             <button
               className="auth-submit"
               type="button"
@@ -139,6 +166,7 @@ export default function Auth({
             <h2 id="auth-title">
               {modo === 'login' ? 'Bienvenido de nuevo' : 'Crea tu cuenta'}
             </h2>
+
             <p id="auth-description" className="auth-dialog__description">
               {modo === 'login'
                 ? 'Inicia sesión para continuar.'
@@ -148,16 +176,25 @@ export default function Auth({
             <div className="auth-tabs" aria-label="Tipo de acceso">
               <button
                 type="button"
-                className={modo === 'login' ? 'auth-tabs__item auth-tabs__item--active' : 'auth-tabs__item'}
+                className={
+                  modo === 'login'
+                    ? 'auth-tabs__item auth-tabs__item--active'
+                    : 'auth-tabs__item'
+                }
                 aria-pressed={modo === 'login'}
                 onClick={() => cambiarModo('login')}
                 disabled={procesando}
               >
                 Iniciar sesión
               </button>
+
               <button
                 type="button"
-                className={modo === 'registro' ? 'auth-tabs__item auth-tabs__item--active' : 'auth-tabs__item'}
+                className={
+                  modo === 'registro'
+                    ? 'auth-tabs__item auth-tabs__item--active'
+                    : 'auth-tabs__item'
+                }
                 aria-pressed={modo === 'registro'}
                 onClick={() => cambiarModo('registro')}
                 disabled={procesando}
@@ -169,6 +206,7 @@ export default function Auth({
             {modo === 'login' ? (
               <>
                 <AuthMessage mensaje={mensajeExito} tipo="exito" />
+
                 <LoginForm
                   procesando={procesando}
                   error={error}

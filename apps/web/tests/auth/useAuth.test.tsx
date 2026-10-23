@@ -1,14 +1,14 @@
 import { act, renderHook } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useAuth } from '../src/modules/auth/hooks/useAuth'
+import { useAuth } from '../../src/modules/auth/hooks/useAuth'
 import {
     cerrarSesion,
     iniciarSesion,
     registrarUsuario,
-} from '../src/modules/auth/services/auth.service'
+} from '../../src/modules/auth/services/auth.service'
 
-vi.mock('../src/modules/auth/services/auth.service', () => ({
+vi.mock('../../src/modules/auth/services/auth.service', () => ({
     cerrarSesion: vi.fn(),
     iniciarSesion: vi.fn(),
     registrarUsuario: vi.fn(),

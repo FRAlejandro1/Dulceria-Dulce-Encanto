@@ -1,4 +1,4 @@
-﻿import { StrictMode } from 'react'
+import { StrictMode } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const { render } = vi.hoisted(() => ({
@@ -9,12 +9,12 @@ vi.mock('react-dom/client', () => ({
   createRoot: vi.fn(() => ({ render })),
 }))
 
-vi.mock('../src/App.tsx', () => ({
+vi.mock('../../src/App.tsx', () => ({
   default: () => null,
 }))
 
 import { createRoot } from 'react-dom/client'
-import App from '../src/App.tsx'
+import App from '../../src/App.tsx'
 
 describe('punto de entrada main.tsx', () => {
   beforeEach(() => {
@@ -28,7 +28,7 @@ describe('punto de entrada main.tsx', () => {
     root.id = 'root'
     document.body.appendChild(root)
 
-    await import('../src/main.tsx')
+    await import('../../src/main.tsx')
 
     expect(createRoot).toHaveBeenCalledWith(root)
     expect(render).toHaveBeenCalledOnce()
