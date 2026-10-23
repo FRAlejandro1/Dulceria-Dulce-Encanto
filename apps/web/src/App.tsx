@@ -1,13 +1,7 @@
-import {
-  lazy,
-  Suspense,
-  useState,
-} from 'react'
+
+import { lazy, Suspense, useState } from 'react'
 import './App.css'
-import type {
-  Producto,
-  Variante,
-} from './types/catalogo.types'
+import type { Producto, Variante } from './types/catalogo.types'
 import type { UsuarioAutenticado } from './modules/auth/types/auth.types'
 import { useCatalog } from './modules/catalog/hooks/useCatalog'
 import { useCatalogFilters } from './modules/catalog/hooks/useCatalogFilters'
@@ -17,6 +11,9 @@ import { useCart } from './modules/cart/hooks/useCart'
 import CartPanel from './modules/cart/components/CartPanel'
 
 const Auth = lazy(() => import('./modules/auth/Auth'))
+const AdminPanel = lazy(
+  () => import('./modules/admin/components/AdminPanel'),
+)
 
 function App() {
   const {
@@ -29,6 +26,7 @@ function App() {
     Record<string, string>
   >({})
   const [vistaCarrito, setVistaCarrito] = useState(false)
+  const [vistaAdministracion, setVistaAdministracion] = useState(false)
   const [temaOscuro, setTemaOscuro] = useState(false)
   const [panel, setPanel] = useState<
     'ninguno' | 'notificaciones' | 'perfil'
@@ -92,14 +90,47 @@ function App() {
   ) {
     setUsuario(usuarioAutenticado)
     setAuthAbierta(false)
-    setAviso(`Sesión iniciada como ${usuarioAutenticado.nombre}.`)
+    setPanel('ninguno')
+    setVistaCarrito(false)
+
+    const esAdministrador = usuarioAutenticado.rol === 'ADMIN'
+    setVistaAdministracion(esAdministrador)
+
+    setAviso(
+      esAdministrador
+        ? `Sesión administrativa iniciada como ${usuarioAutenticado.nombre}.`
+        : `Sesión iniciada como ${usuarioAutenticado.nombre}.`,
+    )
   }
 
   function manejarCierreSesion() {
     setUsuario(null)
+    setVistaAdministracion(false)
+    setVistaCarrito(false)
+    setPanel('ninguno')
+    setAuthAbierta(false)
     setAviso(
       'Has cerrado sesión. Tus favoritos y carrito siguen siendo temporales.',
     )
+  }
+
+  function volverATienda() {
+    setVistaAdministracion(false)
+    setVistaCarrito(false)
+    setPanel('ninguno')
+    volverAlInicio()
+  }
+
+  function abrirAdministracion() {
+    if (usuario?.rol !== 'ADMIN') {
+      setAviso('No tienes permisos para acceder a la administración.')
+      return
+    }
+
+    setVistaAdministracion(true)
+    setVistaCarrito(false)
+    setPanel('ninguno')
+    setAuthAbierta(false)
   }
 
   function obtenerVarianteSeleccionada(
@@ -155,7 +186,12 @@ function App() {
           aria-label="Dulce Encanto, inicio"
           onClick={(evento) => {
             evento.preventDefault()
-            volverAlInicio()
+
+            if (vistaAdministracion) {
+              volverATienda()
+            } else {
+              volverAlInicio()
+            }
           }}
         >
           <span className="brand__mark">DE</span>
@@ -165,85 +201,101 @@ function App() {
           </span>
         </a>
 
-        <nav className="main-nav" aria-label="Navegación principal">
-          <a
-            className="main-nav__item"
-            href="#inicio"
-            onClick={(evento) => {
-              evento.preventDefault()
-              volverAlInicio()
-            }}
-          >
-            Inicio
-          </a>
+        {vistaAdministracion && usuario?.rol === 'ADMIN' ? (
+          <nav className="main-nav" aria-label="Navegación administrativa">
+            <button
+              type="button"
+              className="main-nav__item"
+              onClick={volverATienda}
+            >
+              Volver a la tienda
+            </button>
+          </nav>
+        ) : (
+          <nav className="main-nav" aria-label="Navegación principal">
+            <a
+              className="main-nav__item"
+              href="#inicio"
+              onClick={(evento) => {
+                evento.preventDefault()
+                volverAlInicio()
+              }}
+            >
+              Inicio
+            </a>
 
-          <a
-            className="main-nav__item"
-            href="#productos"
-            onClick={(evento) => {
-              evento.preventDefault()
-              navegarAProductos(true)
-            }}
-          >
-            Ofertas
-          </a>
+            <a
+              className="main-nav__item"
+              href="#productos"
+              onClick={(evento) => {
+                evento.preventDefault()
+                navegarAProductos(true)
+              }}
+            >
+              Ofertas
+            </a>
 
-          <a
-            className="main-nav__item"
-            href="#productos"
-            onClick={(evento) => {
-              evento.preventDefault()
-              navegarAProductos(false)
-            }}
-          >
-            Productos
-          </a>
+            <a
+              className="main-nav__item"
+              href="#productos"
+              onClick={(evento) => {
+                evento.preventDefault()
+                navegarAProductos(false)
+              }}
+            >
+              Productos
+            </a>
 
-          <button
-            type="button"
-            className={
-              verFavoritos
-                ? 'main-nav__item main-nav__item--active'
-                : 'main-nav__item'
-            }
-            onClick={alternarFavoritos}
-            aria-pressed={verFavoritos}
-          >
-            Favoritos <span className="nav-count">{favoritos.length}</span>
-          </button>
-        </nav>
+            <button
+              type="button"
+              className={
+                verFavoritos
+                  ? 'main-nav__item main-nav__item--active'
+                  : 'main-nav__item'
+              }
+              onClick={alternarFavoritos}
+              aria-pressed={verFavoritos}
+            >
+              Favoritos <span className="nav-count">{favoritos.length}</span>
+            </button>
+          </nav>
+        )}
 
         <div className="header-actions">
-          <button
-            type="button"
-            className="icon-button"
-            aria-label="Notificaciones"
-            onClick={() =>
-              setPanel((actual) =>
-                actual === 'notificaciones' ? 'ninguno' : 'notificaciones',
-              )
-            }
-          >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4" />
-            </svg>
-            <span className="notification-dot" />
-          </button>
+          {!vistaAdministracion && (
+            <button
+              type="button"
+              className="icon-button"
+              aria-label="Notificaciones"
+              onClick={() =>
+                setPanel((actual) =>
+                  actual === 'notificaciones' ? 'ninguno' : 'notificaciones',
+                )
+              }
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4" />
+              </svg>
+              <span className="notification-dot" />
+            </button>
+          )}
 
-          <button
-            type="button"
-            className="icon-button cart-button"
-            aria-label={`Carrito, ${cantidadCarrito} productos`}
-            aria-pressed={vistaCarrito}
-            onClick={abrirCarrito}
-          >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M3 4h2l2.2 11.2a2 2 0 0 0 2 1.6h7.9a2 2 0 0 0 1.9-1.4L21 8H6M10 21h.01M18 21h.01" />
-            </svg>
-            {cantidadCarrito > 0 && (
-              <span className="icon-button__badge">{cantidadCarrito}</span>
-            )}
-          </button>
+          {!vistaAdministracion && (
+            <button
+              type="button"
+              className="icon-button cart-button"
+              aria-label={`Carrito, ${cantidadCarrito} productos`}
+              aria-pressed={vistaCarrito}
+              onClick={abrirCarrito}
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M3 4h2l2.2 11.2a2 2 0 0 0 2 1.6h7.9a2 2 0 0 0 1.9-1.4L21 8H6M10 21h.01M18 21h.01" />
+              </svg>
+              {cantidadCarrito > 0 && (
+                <span className="icon-button__badge">{cantidadCarrito}</span>
+              )}
+            </button>
+          )}
 
           <button
             type="button"
@@ -273,7 +325,7 @@ function App() {
         </div>
       </header>
 
-      {panel !== 'ninguno' && (
+      {!vistaAdministracion && panel !== 'ninguno' && (
         <section className="floating-panel" aria-live="polite">
           <button
             type="button"
@@ -297,6 +349,17 @@ function App() {
                   ? `Has iniciado sesión como ${usuario.nombre}.`
                   : 'Inicia sesión para acceder a tu cuenta. Tus favoritos y carrito se gestionan temporalmente en este navegador.'}
               </p>
+
+              {usuario?.rol === 'ADMIN' && (
+                <button
+                  type="button"
+                  className="floating-panel__action"
+                  onClick={abrirAdministracion}
+                >
+                  Abrir administración
+                </button>
+              )}
+
               <button
                 type="button"
                 className="floating-panel__action"
@@ -327,7 +390,20 @@ function App() {
         </Suspense>
       )}
 
-      {vistaCarrito ? (
+      {vistaAdministracion && usuario?.rol === 'ADMIN' ? (
+        <Suspense
+          fallback={
+            <div className="catalog-status" role="status">
+              Cargando administración…
+            </div>
+          }
+        >
+          <AdminPanel
+            productos={productos}
+            alVolverATienda={volverATienda}
+          />
+        </Suspense>
+      ) : vistaCarrito ? (
         <CartPanel
           productos={productos}
           carrito={carrito}
@@ -511,19 +587,21 @@ function App() {
         </div>
       )}
 
-      <footer className="footer">
-        <span className="brand__mark footer__mark">DE</span>
-        <p>© Dulce Encanto · Hecho para compartir momentos dulces.</p>
-        <a
-          href="#inicio"
-          onClick={(evento) => {
-            evento.preventDefault()
-            volverAlInicio()
-          }}
-        >
-          Volver arriba ↑
-        </a>
-      </footer>
+      {!vistaAdministracion && (
+        <footer className="footer">
+          <span className="brand__mark footer__mark">DE</span>
+          <p>© Dulce Encanto · Hecho para compartir momentos dulces.</p>
+          <a
+            href="#inicio"
+            onClick={(evento) => {
+              evento.preventDefault()
+              volverAlInicio()
+            }}
+          >
+            Volver arriba ↑
+          </a>
+        </footer>
+      )}
     </main>
   )
 }

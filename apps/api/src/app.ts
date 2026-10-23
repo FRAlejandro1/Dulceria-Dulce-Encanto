@@ -8,6 +8,8 @@ import { catalogoRouter } from './modules/catalog/catalog.routes.js';
 import { usuariosRouter } from './modules/users/users.routes.js';
 import { manejarError } from './shared/http/error-handler.js';
 
+import { adminRouter } from './modules/admin/admin.routes.js';
+
 export function crearAplicacion(): Express {
   const app = express();
   const origenWeb = process.env.WEB_ORIGIN ?? 'http://localhost:5173';
@@ -23,6 +25,7 @@ export function crearAplicacion(): Express {
   app.use('/api/v1/auth', autenticacionRouter);
   app.use('/api/v1/catalog', catalogoRouter);
   app.use('/api/v1/users', usuariosRouter);
+  app.use('/api/v1/admin', adminRouter);
 
   app.get('/api/v1/health', (_req, res) => {
     res.status(200).json({ status: 'ok' });
