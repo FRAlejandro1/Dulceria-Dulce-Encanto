@@ -1,94 +1,16 @@
+﻿import {
+  comprobarRespuesta,
+  enviarSolicitudProtegida,
+} from '../../../services/http.service'
 import { RUTAS_AUTENTICACION } from '../constants/auth.constants'
 import type {
   DatosInicioSesion,
   DatosRegistro,
   RespuestaInicioSesion,
   RespuestaRegistro,
-  ResultadoCsrf,
   UsuarioAutenticado,
 } from '../types/auth.types'
 import { esObjeto } from '../utils/auth.utils'
-
-async function leerJson(respuesta: Response): Promise<unknown> {
-  try {
-    return await respuesta.json()
-  } catch {
-    throw new Error('El servidor devolvió una respuesta inválida.')
-  }
-}
-
-async function comprobarRespuesta(
-  respuesta: Response,
-): Promise<unknown> {
-  if (respuesta.status === 204) {
-    return undefined
-  }
-
-  const datos = await leerJson(respuesta)
-
-  if (!respuesta.ok) {
-    if (esObjeto(datos) && typeof datos.error === 'string') {
-      throw new Error(datos.error)
-    }
-
-    throw new Error('No se pudo procesar la solicitud.')
-  }
-
-  return datos
-}
-
-function validarRespuestaCsrf(datos: unknown): asserts datos is ResultadoCsrf {
-  if (
-    !esObjeto(datos)
-    || typeof datos.csrfToken !== 'string'
-    || datos.csrfToken.length === 0
-  ) {
-    throw new Error('No se pudo obtener el token de seguridad.')
-  }
-}
-
-async function obtenerTokenCsrf(): Promise<string> {
-  const respuesta = await fetch(RUTAS_AUTENTICACION.csrf, {
-    method: 'GET',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-    },
-  })
-
-  const datos = await comprobarRespuesta(respuesta)
-
-  validarRespuestaCsrf(datos)
-
-  return datos.csrfToken
-}
-
-async function enviarSolicitudProtegida(
-  ruta: string,
-  metodo: 'POST',
-  cuerpo?: unknown,
-): Promise<unknown> {
-  const csrfToken = await obtenerTokenCsrf()
-  const encabezados: Record<string, string> = {
-    Accept: 'application/json',
-    'X-CSRF-Token': csrfToken,
-  }
-
-  if (cuerpo !== undefined) {
-    encabezados['Content-Type'] = 'application/json'
-  }
-
-  const respuesta = await fetch(ruta, {
-    method: metodo,
-    credentials: 'include',
-    headers: encabezados,
-    ...(cuerpo === undefined
-      ? {}
-      : { body: JSON.stringify(cuerpo) }),
-  })
-
-  return comprobarRespuesta(respuesta)
-}
 
 function validarRespuestaUsuario(
   datos: unknown,
@@ -126,8 +48,10 @@ export async function iniciarSesion(
 ): Promise<RespuestaInicioSesion> {
   const datos = await enviarSolicitudProtegida(
     RUTAS_AUTENTICACION.login,
-    'POST',
-    entrada,
+    {
+      metodo: 'POST',
+      cuerpo: entrada,
+    },
   )
 
   validarRespuestaInicioSesion(datos)
@@ -163,6 +87,8 @@ export async function registrarUsuario(
 export async function cerrarSesion(): Promise<void> {
   await enviarSolicitudProtegida(
     RUTAS_AUTENTICACION.logout,
-    'POST',
+    {
+      metodo: 'POST',
+    },
   )
 }

@@ -2,6 +2,7 @@
   --color-fondo: #fbf8f5;
   --color-superficie: #ffffff;
   --color-texto: #3e302c;
+  --color-texto-negro: #171717;
   --color-secundario: #75625b;
   --color-acento: #a84458;
   --color-acento-hover: #873449;
@@ -9,6 +10,7 @@
   --color-borde: #e5d8d2;
   --color-etiqueta: #f4e8dc;
   --color-sombra: 0 8px 28px rgb(76 48 40 / 5%);
+  --font-size-eyebrow: 0.875rem;
   min-height: 100vh;
   background: var(--color-fondo);
   color: var(--color-texto);
@@ -19,6 +21,7 @@
   --color-fondo: #201b1a;
   --color-superficie: #2b2422;
   --color-texto: #f8eee8;
+  --color-texto-negro: #171717;
   --color-secundario: #d0bdb4;
   --color-acento: #e58b9a;
   --color-acento-hover: #f0a0ad;

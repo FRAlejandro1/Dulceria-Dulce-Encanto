@@ -1,7 +1,7 @@
-import { useMemo, useState } from 'react'
-import type { Producto } from '../../../types/catalogo.types'
+﻿import { useMemo, useState } from 'react'
+import type { ProductoAdmin } from '../types/inventory.types'
 
-export function useInventory(productos: Producto[]) {
+export function useInventory(productos: ProductoAdmin[]) {
   const [busqueda, setBusqueda] = useState('')
   const [categoriaSeleccionada, setCategoriaSeleccionada] = useState('Todas')
   const [productoSeleccionadoId, setProductoSeleccionadoId] = useState(

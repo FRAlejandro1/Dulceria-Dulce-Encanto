@@ -202,3 +202,120 @@ describe('ProductCard', () => {
     expect(screen.getByText('5 disponibles')).toBeTruthy()
   })
 })
+
+describe('ProductCard: ramas adicionales', () => {
+  it('sustituye una imagen personalizada cuando falla su carga', () => {
+    const productoConImagen: Producto = {
+      ...producto,
+      imagenUrl: 'https://example.com/producto.png',
+    }
+
+    render(
+      <ProductCard
+        producto={productoConImagen}
+        variante={productoConImagen.variantes[0]}
+        favorito={false}
+        cantidadEnCarrito={0}
+        onCambiarVariante={vi.fn()}
+        onAlternarFavorito={vi.fn()}
+        onAgregar={vi.fn()}
+      />,
+    )
+
+    const imagen = screen.getByRole('img', {
+      name: 'Producto de prueba',
+    })
+
+    fireEvent.error(imagen)
+
+    expect(imagen.getAttribute('src')).toContain(
+      'photo-1558961363-fa8fdf82db35',
+    )
+  })
+
+  it('conserva la imagen predeterminada si vuelve a fallar', () => {
+    renderizarTarjeta()
+
+    const imagen = screen.getByRole('img', {
+      name: 'Producto de prueba',
+    })
+    const origenInicial = imagen.getAttribute('src')
+
+    fireEvent.error(imagen)
+
+    expect(imagen.getAttribute('src')).toBe(origenInicial)
+  })
+
+  it('usa la categoría predeterminada cuando el nombre está vacío', () => {
+    const productoSinCategoria: Producto = {
+      ...producto,
+      categoria: {
+        ...producto.categoria,
+        nombre: '',
+      },
+    }
+
+    render(
+      <ProductCard
+        producto={productoSinCategoria}
+        variante={productoSinCategoria.variantes[0]}
+        favorito={false}
+        cantidadEnCarrito={0}
+        onCambiarVariante={vi.fn()}
+        onAlternarFavorito={vi.fn()}
+        onAgregar={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByText('Dulces artesanales')).toBeTruthy()
+  })
+
+  it.each([
+    ['precio negativo', '-1.50'],
+    ['precio no numérico', 'inválido'],
+  ])('muestra cero con un %s', (_caso, precio) => {
+    const productoConPrecioInvalido: Producto = {
+      ...producto,
+      variantes: [{ ...producto.variantes[0], precio }],
+    }
+
+    render(
+      <ProductCard
+        producto={productoConPrecioInvalido}
+        variante={productoConPrecioInvalido.variantes[0]}
+        favorito={false}
+        cantidadEnCarrito={0}
+        onCambiarVariante={vi.fn()}
+        onAlternarFavorito={vi.fn()}
+        onAgregar={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByText('$0.00')).toBeTruthy()
+  })
+
+  it('no muestra selector cuando el producto tiene una sola variante', () => {
+    const productoUnaVariante: Producto = {
+      ...producto,
+      variantes: [producto.variantes[0]],
+    }
+
+    render(
+      <ProductCard
+        producto={productoUnaVariante}
+        variante={productoUnaVariante.variantes[0]}
+        favorito={false}
+        cantidadEnCarrito={0}
+        onCambiarVariante={vi.fn()}
+        onAlternarFavorito={vi.fn()}
+        onAgregar={vi.fn()}
+      />,
+    )
+
+    expect(
+      screen.queryByRole('combobox', {
+        name: 'Presentación de Producto de prueba',
+      }),
+    ).toBeNull()
+  })
+})
