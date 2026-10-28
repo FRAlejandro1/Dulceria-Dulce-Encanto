@@ -36,9 +36,9 @@ function normalizarSlug(valor: string): string {
     .toLowerCase()
     .trim()
     .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
+    .replace(/^-+/, '')
     .slice(0, 120)
-    .replace(/-+$/g, '');
+    .replace(/-+$/, '');
 }
 
 function mensajeDeConflicto(error: unknown): boolean {
