@@ -1,5 +1,4 @@
-
-import { z } from 'zod';
+﻿import { z } from 'zod';
 
 const identificadorSchema = z
   .string()
@@ -28,7 +27,6 @@ const skuSchema = z
   .trim()
   .min(1, 'El SKU es obligatorio')
   .max(64, 'El SKU no puede superar 64 caracteres');
-
 
 const imagenUrlSchema = z
   .string()
@@ -74,6 +72,34 @@ const slugSchema = z
 export const idAdminParamsSchema = z.object({
   id: identificadorSchema,
 }).strict();
+
+export const imagenVarianteParamsSchema = z.object({
+  id: identificadorSchema,
+  imageId: identificadorSchema,
+}).strict();
+
+export const posicionImagenSchema = z
+  .string()
+  .regex(/^[1-3]$/, 'La posición debe ser 1, 2 o 3')
+  .transform(Number);
+
+export const ajustarStockSchema = z.object({
+  cantidad: z
+    .number()
+    .int('La cantidad debe ser un número entero')
+    .min(0, 'El stock no puede ser negativo')
+    .max(
+      4_294_967_295,
+      'La cantidad supera el máximo permitido',
+    ),
+  motivo: z
+    .string()
+    .trim()
+    .min(3, 'El motivo debe tener al menos 3 caracteres')
+    .max(500, 'El motivo no puede superar 500 caracteres'),
+}).strict();
+
+export type AjustarStock = z.infer<typeof ajustarStockSchema>;
 
 export const crearCategoriaSchema = z.object({
   nombre: nombreCategoriaSchema,

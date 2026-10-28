@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+﻿import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import {
     afterEach,
     beforeEach,
@@ -221,4 +221,86 @@ describe('Integración de autenticación en App', () => {
             screen.getByRole('button', { name: 'Cerrar sesión' }),
         ).toBeTruthy()
     })
+
+    it('abre el panel administrativo al iniciar sesión como ADMIN', async () => {
+        const usuarioAdmin = {
+            id: 'admin-1',
+            nombre: 'Administradora',
+            correo: 'admin@example.com',
+            rol: 'ADMIN' as const,
+        }
+
+        const fetchSimulado = configurarFetchAutenticacion(
+            respuesta({
+                usuario: usuarioAdmin,
+                expiraEn: '2027-01-01T00:00:00.000Z',
+            }),
+        )
+
+        fetchSimulado.mockImplementation(
+            async (entrada: RequestInfo | URL): Promise<Response> => {
+                const ruta = String(entrada)
+
+                if (ruta === '/api/v1/catalog/products') {
+                    return respuesta({ productos: [] })
+                }
+
+                if (ruta === '/api/v1/auth/csrf') {
+                    return respuesta({ csrfToken: 'token-csrf-prueba' })
+                }
+
+                if (ruta === '/api/v1/auth/login') {
+                    return respuesta({
+                        usuario: usuarioAdmin,
+                        expiraEn: '2027-01-01T00:00:00.000Z',
+                    })
+                }
+
+                if (ruta === '/api/v1/admin/products') {
+                    return respuesta({ productos: [] })
+                }
+
+                if (ruta === '/api/v1/admin/categories') {
+                    return respuesta({ categorias: [] })
+                }
+
+                return respuesta({ error: 'Ruta no encontrada.' }, 404, false)
+            },
+        )
+
+        await abrirDialogoAutenticacion()
+        await enviarInicioSesion()
+
+        expect(
+            await screen.findByText(
+                'Sesión administrativa iniciada como Administradora.',
+            ),
+        ).toBeTruthy()
+
+        expect(
+            await screen.findByRole('heading', { name: 'Inventario' }),
+        ).toBeTruthy()
+
+        await waitFor(() => {
+            expect(fetchSimulado).toHaveBeenCalledWith(
+                '/api/v1/admin/products',
+                expect.objectContaining({ method: 'GET' }),
+            )
+            expect(fetchSimulado).toHaveBeenCalledWith(
+                '/api/v1/admin/categories',
+                expect.objectContaining({ method: 'GET' }),
+            )
+        })
+
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Volver a la tienda' }),
+        )
+
+        expect(
+            await screen.findByRole('heading', { name: 'Nuestros productos' }),
+        ).toBeTruthy()
+    })
+
+
+
 })

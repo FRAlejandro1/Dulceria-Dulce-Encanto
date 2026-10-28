@@ -16,6 +16,9 @@ import {
   actualizarCategoria,
   actualizarProducto,
   actualizarVariante,
+  actualizarStockFisico,
+  obtenerInventarioParaAjuste,
+  registrarMovimientoAjuste,
   crearCategoria,
   crearProducto,
   crearVariante,
@@ -671,5 +674,80 @@ describe('actualizarVariante', () => {
     ).resolves.toBeUndefined();
 
     expect(execute).not.toHaveBeenCalled();
+  });
+});
+
+
+describe('obtenerInventarioParaAjuste', () => {
+  it('devuelve el stock físico y reservado de la variante', async () => {
+    const execute = vi.fn().mockResolvedValue(
+      filasResultado([
+        { stock_fisico: '15', stock_reservado: '4' },
+      ]),
+    );
+    const conexion = crearConexion(execute);
+
+    await expect(
+      obtenerInventarioParaAjuste(conexion, '35'),
+    ).resolves.toEqual({
+      stockFisico: 15,
+      stockReservado: 4,
+    });
+
+    expect(execute).toHaveBeenCalledWith(
+      expect.stringContaining('FOR UPDATE'),
+      ['35'],
+    );
+  });
+
+  it('devuelve null cuando la variante no tiene inventario', async () => {
+    const execute = vi.fn().mockResolvedValue(filasResultado([]));
+    const conexion = crearConexion(execute);
+
+    await expect(
+      obtenerInventarioParaAjuste(conexion, '35'),
+    ).resolves.toBeNull();
+
+    expect(execute).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('actualizarStockFisico', () => {
+  it('actualiza el stock físico de la variante', async () => {
+    const execute = vi.fn().mockResolvedValue([{}, []]);
+    const conexion = crearConexion(execute);
+
+    await expect(
+      actualizarStockFisico(conexion, '35', 20),
+    ).resolves.toBeUndefined();
+
+    expect(execute).toHaveBeenCalledWith(
+      expect.stringContaining('UPDATE inventory'),
+      [20, '35'],
+    );
+  });
+});
+
+describe('registrarMovimientoAjuste', () => {
+  it('registra el movimiento de ajuste con los datos del inventario', async () => {
+    const execute = vi.fn().mockResolvedValue([{}, []]);
+    const conexion = crearConexion(execute);
+
+    await expect(
+      registrarMovimientoAjuste(conexion, {
+        varianteId: '35',
+        cantidad: 5,
+        stockFisicoAnterior: 10,
+        stockFisicoNuevo: 15,
+        stockReservado: 3,
+        motivo: 'Corrección de inventario',
+        actorId: '20',
+      }),
+    ).resolves.toBeUndefined();
+
+    expect(execute).toHaveBeenCalledWith(
+      expect.stringContaining('INSERT INTO inventory_movements'),
+      ['35', 5, 10, 15, 3, 3, 'Corrección de inventario', '20'],
+    );
   });
 });

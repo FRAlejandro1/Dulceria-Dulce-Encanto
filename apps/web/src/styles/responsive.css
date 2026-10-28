@@ -1,10 +1,4 @@
-@media (min-width: 1450px) {
-  .product-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 1000px) {
+﻿@media (max-width: 1000px) {
   .topbar {
     flex-wrap: wrap;
     gap: 14px;
@@ -127,12 +121,8 @@
   }
 
   .product-grid {
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 16px;
-  }
-
-  .product-card__visual {
-    aspect-ratio: 1.65;
   }
 
   .product-card__body {

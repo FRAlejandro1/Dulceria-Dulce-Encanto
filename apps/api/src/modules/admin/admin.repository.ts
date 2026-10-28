@@ -41,6 +41,11 @@ export interface ProductoAdmin {
   variantes: VarianteAdmin[];
 }
 
+export interface InventarioParaAjuste {
+  stockFisico: number;
+  stockReservado: number;
+}
+
 interface FilaProducto extends RowDataPacket {
   producto_id: string;
   producto_nombre: string;
@@ -70,6 +75,11 @@ interface FilaCategoria extends RowDataPacket {
 
 interface FilaId extends RowDataPacket {
   id: string;
+}
+
+interface FilaInventarioAjuste extends RowDataPacket {
+  stock_fisico: number;
+  stock_reservado: number;
 }
 
 export async function listarCategoriasAdmin(): Promise<CategoriaAdmin[]> {
@@ -413,5 +423,82 @@ export async function actualizarVariante(
   await conexion.execute(
     `UPDATE product_variants SET ${campos.join(', ')} WHERE id = ?`,
     valores,
+  );
+}
+
+export async function obtenerInventarioParaAjuste(
+  conexion: PoolConnection,
+  varianteId: string,
+): Promise<InventarioParaAjuste | null> {
+  const [filas] = await conexion.execute<FilaInventarioAjuste[]>(
+    `SELECT
+       stock_on_hand AS stock_fisico,
+       stock_reserved AS stock_reservado
+     FROM inventory
+     WHERE product_variant_id = ?
+     FOR UPDATE`,
+    [varianteId],
+  );
+
+  const fila = filas[0];
+
+  if (fila === undefined) {
+    return null;
+  }
+
+  return {
+    stockFisico: Number(fila.stock_fisico),
+    stockReservado: Number(fila.stock_reservado),
+  };
+}
+
+export async function actualizarStockFisico(
+  conexion: PoolConnection,
+  varianteId: string,
+  cantidad: number,
+): Promise<void> {
+  await conexion.execute(
+    `UPDATE inventory
+     SET stock_on_hand = ?
+     WHERE product_variant_id = ?`,
+    [cantidad, varianteId],
+  );
+}
+
+export async function registrarMovimientoAjuste(
+  conexion: PoolConnection,
+  datos: {
+    varianteId: string;
+    cantidad: number;
+    stockFisicoAnterior: number;
+    stockFisicoNuevo: number;
+    stockReservado: number;
+    motivo: string;
+    actorId: string;
+  },
+): Promise<void> {
+  await conexion.execute(
+    `INSERT INTO inventory_movements (
+       product_variant_id,
+       order_id,
+       movement_type,
+       quantity,
+       stock_on_hand_before,
+       stock_on_hand_after,
+       stock_reserved_before,
+       stock_reserved_after,
+       reason,
+       created_by
+     ) VALUES (?, NULL, 'ADJUSTMENT', ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      datos.varianteId,
+      datos.cantidad,
+      datos.stockFisicoAnterior,
+      datos.stockFisicoNuevo,
+      datos.stockReservado,
+      datos.stockReservado,
+      datos.motivo,
+      datos.actorId,
+    ],
   );
 }

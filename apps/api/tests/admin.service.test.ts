@@ -5,6 +5,9 @@ const mocks = vi.hoisted(() => ({
   registrarAuditoria: vi.fn(),
   actualizarCategoriaRepo: vi.fn(),
   actualizarProductoRepo: vi.fn(),
+  actualizarStockFisico: vi.fn(),
+  obtenerInventarioParaAjuste: vi.fn(),
+  registrarMovimientoAjuste: vi.fn(),
   actualizarVarianteRepo: vi.fn(),
   crearCategoriaRepo: vi.fn(),
   crearProductoRepo: vi.fn(),
@@ -27,6 +30,7 @@ vi.mock('../src/modules/audit/audit.repository.js', () => ({
 vi.mock('../src/modules/admin/admin.repository.js', () => ({
   actualizarCategoria: mocks.actualizarCategoriaRepo,
   actualizarProducto: mocks.actualizarProductoRepo,
+  actualizarStockFisico: mocks.actualizarStockFisico,
   actualizarVariante: mocks.actualizarVarianteRepo,
   crearCategoria: mocks.crearCategoriaRepo,
   crearProducto: mocks.crearProductoRepo,
@@ -36,12 +40,15 @@ vi.mock('../src/modules/admin/admin.repository.js', () => ({
   existeVariante: mocks.existeVariante,
   listarCategoriasAdmin: mocks.listarCategoriasAdmin,
   listarProductosAdmin: mocks.listarProductosAdmin,
+  obtenerInventarioParaAjuste: mocks.obtenerInventarioParaAjuste,
+  registrarMovimientoAjuste: mocks.registrarMovimientoAjuste,
 }));
 
 import {
   actualizarCategoria,
   actualizarProducto,
   actualizarVariante,
+  ajustarStock,
   crearCategoria,
   crearProducto,
   crearVariante,
@@ -92,6 +99,12 @@ beforeEach(() => {
   mocks.actualizarCategoriaRepo.mockResolvedValue(undefined);
   mocks.actualizarProductoRepo.mockResolvedValue(undefined);
   mocks.actualizarVarianteRepo.mockResolvedValue(undefined);
+  mocks.actualizarStockFisico.mockResolvedValue(undefined);
+  mocks.obtenerInventarioParaAjuste.mockResolvedValue({
+    stockFisico: 5,
+    stockReservado: 2,
+  });
+  mocks.registrarMovimientoAjuste.mockResolvedValue(undefined);
 
   mocks.existeCategoria.mockResolvedValue(true);
   mocks.existeProducto.mockResolvedValue(true);
@@ -554,6 +567,130 @@ describe('actualizarVariante', () => {
     await expect(
       actualizarVariante('5', '30', { sku: 'REPETIDO' }),
     ).rejects.toMatchObject({ status: 409 });
+  });
+});
+
+describe('ajustarStock', () => {
+  const datos = {
+    cantidad: 8,
+    motivo: 'Reposición de productos',
+  };
+
+  it('ajusta el stock y registra el movimiento y la auditoría', async () => {
+    await expect(
+      ajustarStock('20', '30', datos),
+    ).resolves.toEqual({
+      varianteId: '30',
+      stockFisicoAnterior: 5,
+      stockFisico: 8,
+      stockReservado: 2,
+      stockDisponible: 6,
+      diferencia: 3,
+    });
+
+    expect(mocks.actualizarStockFisico).toHaveBeenCalledWith(
+      conexion,
+      '30',
+      8,
+    );
+
+    expect(mocks.registrarMovimientoAjuste).toHaveBeenCalledWith(
+      conexion,
+      {
+        varianteId: '30',
+        cantidad: 3,
+        stockFisicoAnterior: 5,
+        stockFisicoNuevo: 8,
+        stockReservado: 2,
+        motivo: datos.motivo,
+        actorId: '20',
+      },
+    );
+
+    expect(mocks.registrarAuditoria).toHaveBeenCalledWith(
+      conexion,
+      expect.objectContaining({
+        actorUserId: '20',
+        action: 'ADMIN_STOCK_ADJUSTED',
+        entityType: 'product_variant',
+        entityId: '30',
+        details: {
+          stockFisicoAnterior: 5,
+          stockFisicoNuevo: 8,
+          stockReservado: 2,
+          diferencia: 3,
+          motivo: datos.motivo,
+        },
+      }),
+    );
+  });
+
+  it('responde 404 cuando la variante no existe', async () => {
+    mocks.obtenerInventarioParaAjuste.mockResolvedValue(null);
+    mocks.existeVariante.mockResolvedValue(false);
+
+    await expect(
+      ajustarStock('20', '30', datos),
+    ).rejects.toMatchObject({
+      status: 404,
+      message: 'La variante no existe.',
+    });
+  });
+
+  it('responde 409 cuando la variante no tiene inventario', async () => {
+    mocks.obtenerInventarioParaAjuste.mockResolvedValue(null);
+    mocks.existeVariante.mockResolvedValue(true);
+
+    await expect(
+      ajustarStock('20', '30', datos),
+    ).rejects.toMatchObject({
+      status: 409,
+      message: 'La variante no tiene un registro de inventario.',
+    });
+  });
+
+  it('rechaza un ajuste que no cambia el stock', async () => {
+    await expect(
+      ajustarStock('20', '30', { ...datos, cantidad: 5 }),
+    ).rejects.toMatchObject({
+      status: 400,
+      message: 'La cantidad nueva debe ser diferente al stock actual.',
+    });
+
+    expect(mocks.actualizarStockFisico).not.toHaveBeenCalled();
+    expect(mocks.registrarMovimientoAjuste).not.toHaveBeenCalled();
+  });
+
+  it('rechaza un stock inferior al reservado', async () => {
+    await expect(
+      ajustarStock('20', '30', { ...datos, cantidad: 1 }),
+    ).rejects.toMatchObject({
+      status: 409,
+    });
+
+    expect(mocks.actualizarStockFisico).not.toHaveBeenCalled();
+    expect(mocks.registrarMovimientoAjuste).not.toHaveBeenCalled();
+  });
+
+  it('registra la diferencia absoluta al reducir el stock', async () => {
+    await expect(
+      ajustarStock('20', '30', { ...datos, cantidad: 3 }),
+    ).resolves.toMatchObject({
+      stockFisicoAnterior: 5,
+      stockFisico: 3,
+      stockReservado: 2,
+      stockDisponible: 1,
+      diferencia: -2,
+    });
+
+    expect(mocks.registrarMovimientoAjuste).toHaveBeenCalledWith(
+      conexion,
+      expect.objectContaining({
+        cantidad: 2,
+        stockFisicoAnterior: 5,
+        stockFisicoNuevo: 3,
+      }),
+    );
   });
 });
 

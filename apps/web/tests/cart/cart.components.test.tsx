@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+﻿import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { Producto, Variante } from '../../src/types/catalogo.types'
 import type { LineaCarrito } from '../../src/modules/cart/types/cart.types'
@@ -23,7 +23,7 @@ const variante: Variante = {
 const producto: Producto = {
     id: 'producto-1',
     nombre: 'Producto de prueba',
-    descripcion: 'Descripción de prueba',
+    descripcion: 'DescripciÃ³n de prueba',
     imagenUrl: null,
     categoria: {
         nombre: 'Pruebas',
@@ -41,7 +41,7 @@ const linea: LineaCarrito = {
 }
 
 describe('CartEmpty', () => {
-    it('muestra el estado vacío y permite volver al catálogo', () => {
+    it('muestra el estado vacÃ­o y permite volver al catÃ¡logo', () => {
         const onCerrar = vi.fn()
 
         render(<CartEmpty onCerrar={onCerrar} />)
@@ -78,7 +78,7 @@ describe('CartItem', () => {
         expect(screen.getByText('$5,00')).toBeTruthy()
     })
 
-    it('usa la imagen de la variante cuando está disponible', () => {
+    it('usa la imagen de la variante cuando estÃ¡ disponible', () => {
         const lineaConImagen: LineaCarrito = {
             ...linea,
             variante: {
@@ -132,7 +132,7 @@ describe('CartItem', () => {
         )
     })
 
-    it('usa la imagen predeterminada cuando no hay imágenes propias', () => {
+    it('usa la imagen predeterminada cuando no hay imÃ¡genes propias', () => {
         render(
             <CartItem
                 linea={linea}
@@ -223,7 +223,7 @@ describe('CartItem', () => {
         expect(screen.getByText(/disponible:\s*3/)).toBeTruthy()
     })
 
-    it('permite eliminar el artículo', () => {
+    it('permite eliminar el artÃ­culo', () => {
         const onEliminar = vi.fn()
 
         render(
@@ -245,7 +245,7 @@ describe('CartItem', () => {
 })
 
 describe('CartSummary', () => {
-    it('muestra las cantidades, el subtotal y la información del envío', () => {
+    it('muestra las cantidades, el subtotal y la informaciÃ³n del envÃ­o', () => {
         render(
             <CartSummary
                 cantidad={2}
@@ -266,7 +266,7 @@ describe('CartSummary', () => {
         expect(screen.getByText('Por confirmar')).toBeTruthy()
     })
 
-    it('invoca la acción de finalizar el pedido', () => {
+    it('invoca la acciÃ³n de finalizar el pedido', () => {
         const onFinalizarPedido = vi.fn()
 
         render(
@@ -295,7 +295,8 @@ describe('CartSummary', () => {
 
         it.each([
             ['precio negativo', '-2.50'],
-            ['precio no numérico', 'inválido'],
+            ['precio cero', '0.00'],
+            ['precio no numÃ©rico', 'invÃ¡lido'],
         ])('reemplaza por cero un %s y calcula el subtotal correctamente', (_caso, precio) => {
             const productoConPrecioInvalido: Producto = {
                 ...producto,
@@ -312,7 +313,7 @@ describe('CartSummary', () => {
             expect(screen.getAllByText('$0,00')).toHaveLength(3)
         })
 
-        it('muestra el estado vacío si no hay unidades en el carrito', () => {
+        it('muestra el estado vacÃ­o si no hay unidades en el carrito', () => {
             render(
                 <CartPanel
                     {...propiedades}
@@ -328,4 +329,40 @@ describe('CartSummary', () => {
             ).toBeTruthy()
         })
     })
+})
+
+describe('CartPanel: ramas adicionales', () => {
+  const propiedadesAdicionales = {
+    productos: [producto],
+    carrito: {} as Record<string, number>,
+    onCerrar: vi.fn(),
+    onCambiarCantidad: vi.fn(),
+    onEliminar: vi.fn(),
+    onFinalizarPedido: vi.fn(),
+  }
+
+  it('ignora variantes cuya cantidad no existe en el carrito', () => {
+    render(<CartPanel {...propiedadesAdicionales} />)
+
+    expect(
+      screen.getByRole('heading', { name: /Tu carrito está vacío/i }),
+    ).toBeTruthy()
+    expect(
+      screen.queryByRole('heading', { name: 'Resumen del pedido' }),
+    ).toBeNull()
+  })
+
+  it('utiliza las líneas, cantidad y subtotal recibidos', () => {
+    render(
+      <CartPanel
+        {...propiedadesAdicionales}
+        lineas={[linea]}
+        cantidadCarrito={7}
+        subtotalCarrito={17.5}
+      />,
+    )
+
+    expect(screen.getAllByText('$17,50')).toHaveLength(2)
+    expect(screen.getByText(/7\s+unidades/)).toBeTruthy()
+  })
 })

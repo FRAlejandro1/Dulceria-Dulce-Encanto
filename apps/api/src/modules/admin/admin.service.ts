@@ -1,12 +1,21 @@
-
 import type { PoolConnection } from 'mysql2/promise';
 
 import { registrarAuditoria } from '../audit/audit.repository.js';
 import { ejecutarTransaccion } from '../../shared/database/transaction.js';
 import { ErrorAplicacion } from '../../shared/http/app-error.js';
+import type {
+  ActualizarCategoria,
+  ActualizarProducto,
+  ActualizarVariante,
+  AjustarStock,
+  CrearCategoria,
+  CrearProducto,
+  CrearVariante,
+} from './admin.schemas.js';
 import {
   actualizarCategoria as actualizarCategoriaRepo,
   actualizarProducto as actualizarProductoRepo,
+  actualizarStockFisico,
   actualizarVariante as actualizarVarianteRepo,
   crearCategoria as crearCategoriaRepo,
   crearProducto as crearProductoRepo,
@@ -14,17 +23,11 @@ import {
   existeCategoria,
   existeProducto,
   existeVariante,
-  listarCategoriasAdmin,
-  listarProductosAdmin,
+  listarCategoriasAdmin as listarCategoriasAdminRepo,
+  listarProductosAdmin as listarProductosAdminRepo,
+  obtenerInventarioParaAjuste,
+  registrarMovimientoAjuste,
 } from './admin.repository.js';
-import type {
-  ActualizarCategoria,
-  ActualizarProducto,
-  ActualizarVariante,
-  CrearCategoria,
-  CrearProducto,
-  CrearVariante,
-} from './admin.schemas.js';
 
 function normalizarSlug(valor: string): string {
   return valor
@@ -56,7 +59,7 @@ async function conConflictos<T>(
     if (mensajeDeConflicto(error)) {
       throw new ErrorAplicacion(
         409,
-        'Ya existe una categoría con ese slug o una variante con ese SKU',
+        'Ya existe una categoría con ese slug o una variante con ese SKU.',
       );
     }
 
@@ -87,38 +90,46 @@ function validarSlug(slug: string): string {
   if (normalizado.length === 0) {
     throw new ErrorAplicacion(
       400,
-      'No se pudo generar un slug válido para la categoría',
+      'No se pudo generar un slug válido para la categoría.',
     );
   }
 
   return normalizado;
 }
 
-export { listarCategoriasAdmin, listarProductosAdmin };
+export async function listarCategoriasAdmin() {
+  return listarCategoriasAdminRepo();
+}
+
+export async function listarProductosAdmin() {
+  return listarProductosAdminRepo();
+}
 
 export async function crearCategoria(
   actorId: string,
   datos: CrearCategoria,
 ): Promise<{ id: string }> {
-  return conConflictos(() => ejecutarTransaccion(async (conexion) => {
-    const slug = validarSlug(datos.slug ?? datos.nombre);
+  return conConflictos(() =>
+    ejecutarTransaccion(async (conexion) => {
+      const slug = validarSlug(datos.slug ?? datos.nombre);
 
-    const id = await crearCategoriaRepo(conexion, {
-      nombre: datos.nombre,
-      slug,
-    });
+      const id = await crearCategoriaRepo(conexion, {
+        nombre: datos.nombre,
+        slug,
+      });
 
-    await auditar(
-      conexion,
-      actorId,
-      'ADMIN_CATEGORY_CREATED',
-      'category',
-      id,
-      { slug },
-    );
+      await auditar(
+        conexion,
+        actorId,
+        'ADMIN_CATEGORY_CREATED',
+        'category',
+        id,
+        { slug },
+      );
 
-    return { id };
-  }));
+      return { id };
+    }),
+  );
 }
 
 export async function actualizarCategoria(
@@ -126,69 +137,73 @@ export async function actualizarCategoria(
   id: string,
   datos: ActualizarCategoria,
 ): Promise<void> {
-  await conConflictos(() => ejecutarTransaccion(async (conexion) => {
-    if (!(await existeCategoria(conexion, id))) {
-      throw new ErrorAplicacion(404, 'La categoría no existe');
-    }
+  await conConflictos(() =>
+    ejecutarTransaccion(async (conexion) => {
+      if (!(await existeCategoria(conexion, id))) {
+        throw new ErrorAplicacion(404, 'La categoría no existe.');
+      }
 
-    const cambios = {
-      ...datos,
-      ...(datos.slug !== undefined
-        ? { slug: validarSlug(datos.slug) }
-        : {}),
-    };
+      const cambios = {
+        ...datos,
+        ...(datos.slug !== undefined
+          ? { slug: validarSlug(datos.slug) }
+          : {}),
+      };
 
-    await actualizarCategoriaRepo(conexion, id, cambios);
+      await actualizarCategoriaRepo(conexion, id, cambios);
 
-    await auditar(
-      conexion,
-      actorId,
-      'ADMIN_CATEGORY_UPDATED',
-      'category',
-      id,
-      { campos: Object.keys(cambios) },
-    );
-  }));
+      await auditar(
+        conexion,
+        actorId,
+        'ADMIN_CATEGORY_UPDATED',
+        'category',
+        id,
+        { campos: Object.keys(cambios) },
+      );
+    }),
+  );
 }
 
 export async function crearProducto(
   actorId: string,
   datos: CrearProducto,
 ): Promise<{ id: string }> {
-  return conConflictos(() => ejecutarTransaccion(async (conexion) => {
-    if (!(await existeCategoria(conexion, datos.categoriaId))) {
-      throw new ErrorAplicacion(404, 'La categoría no existe');
-    }
+  return conConflictos(() =>
+    ejecutarTransaccion(async (conexion) => {
+      if (!(await existeCategoria(conexion, datos.categoriaId))) {
+        throw new ErrorAplicacion(404, 'La categoría no existe.');
+      }
 
-    const id = await crearProductoRepo(conexion, {
-      nombre: datos.nombre,
-      descripcion: datos.descripcion ?? null,
-      imagenUrl: datos.imagenUrl ?? null,
-      categoriaId: datos.categoriaId,
-      activo: datos.activo ?? true,
-    });
-
-    for (const variante of datos.variantes) {
-      await crearVarianteRepo(conexion, id, {
-        nombre: variante.nombre,
-        sku: variante.sku,
-        precio: variante.precio,
-        imagenUrl: variante.imagenUrl ?? null,
-        activa: variante.activa ?? true,
+      const id = await crearProductoRepo(conexion, {
+        nombre: datos.nombre,
+        descripcion: datos.descripcion ?? null,
+        imagenUrl: datos.imagenUrl ?? null,
+        categoriaId: datos.categoriaId,
+        activo: datos.activo ?? true,
       });
-    }
 
-    await auditar(
-      conexion,
-      actorId,
-      'ADMIN_PRODUCT_CREATED',
-      'product',
-      id,
-      { cantidadVariantes: datos.variantes.length },
-    );
+      for (const variante of datos.variantes) {
+        await crearVarianteRepo(conexion, id, {
+          nombre: variante.nombre,
+          sku: variante.sku,
+          precio: variante.precio,
+          imagenUrl: variante.imagenUrl ?? null,
+          activa: variante.activa ?? true,
+        });
+      }
 
-    return { id };
-  }));
+      await auditar(
+        conexion,
+        actorId,
+        'ADMIN_PRODUCT_CREATED',
+        'product',
+        id,
+        { cantidadVariantes: datos.variantes.length },
+      );
+
+      return { id };
+    }),
+  );
 }
 
 export async function actualizarProducto(
@@ -196,29 +211,31 @@ export async function actualizarProducto(
   id: string,
   datos: ActualizarProducto,
 ): Promise<void> {
-  await conConflictos(() => ejecutarTransaccion(async (conexion) => {
-    if (!(await existeProducto(conexion, id))) {
-      throw new ErrorAplicacion(404, 'El producto no existe');
-    }
+  await conConflictos(() =>
+    ejecutarTransaccion(async (conexion) => {
+      if (!(await existeProducto(conexion, id))) {
+        throw new ErrorAplicacion(404, 'El producto no existe.');
+      }
 
-    if (
-      datos.categoriaId !== undefined &&
-      !(await existeCategoria(conexion, datos.categoriaId))
-    ) {
-      throw new ErrorAplicacion(404, 'La categoría no existe');
-    }
+      if (
+        datos.categoriaId !== undefined &&
+        !(await existeCategoria(conexion, datos.categoriaId))
+      ) {
+        throw new ErrorAplicacion(404, 'La categoría no existe.');
+      }
 
-    await actualizarProductoRepo(conexion, id, datos);
+      await actualizarProductoRepo(conexion, id, datos);
 
-    await auditar(
-      conexion,
-      actorId,
-      'ADMIN_PRODUCT_UPDATED',
-      'product',
-      id,
-      { campos: Object.keys(datos) },
-    );
-  }));
+      await auditar(
+        conexion,
+        actorId,
+        'ADMIN_PRODUCT_UPDATED',
+        'product',
+        id,
+        { campos: Object.keys(datos) },
+      );
+    }),
+  );
 }
 
 export async function crearVariante(
@@ -226,30 +243,32 @@ export async function crearVariante(
   productoId: string,
   datos: CrearVariante,
 ): Promise<{ id: string }> {
-  return conConflictos(() => ejecutarTransaccion(async (conexion) => {
-    if (!(await existeProducto(conexion, productoId))) {
-      throw new ErrorAplicacion(404, 'El producto no existe');
-    }
+  return conConflictos(() =>
+    ejecutarTransaccion(async (conexion) => {
+      if (!(await existeProducto(conexion, productoId))) {
+        throw new ErrorAplicacion(404, 'El producto no existe.');
+      }
 
-    const id = await crearVarianteRepo(conexion, productoId, {
-      nombre: datos.nombre,
-      sku: datos.sku,
-      precio: datos.precio,
-      imagenUrl: datos.imagenUrl ?? null,
-      activa: datos.activa ?? true,
-    });
+      const id = await crearVarianteRepo(conexion, productoId, {
+        nombre: datos.nombre,
+        sku: datos.sku,
+        precio: datos.precio,
+        imagenUrl: datos.imagenUrl ?? null,
+        activa: datos.activa ?? true,
+      });
 
-    await auditar(
-      conexion,
-      actorId,
-      'ADMIN_VARIANT_CREATED',
-      'product_variant',
-      id,
-      { productoId },
-    );
+      await auditar(
+        conexion,
+        actorId,
+        'ADMIN_VARIANT_CREATED',
+        'product_variant',
+        id,
+        { productoId },
+      );
 
-    return { id };
-  }));
+      return { id };
+    }),
+  );
 }
 
 export async function actualizarVariante(
@@ -257,20 +276,109 @@ export async function actualizarVariante(
   id: string,
   datos: ActualizarVariante,
 ): Promise<void> {
-  await conConflictos(() => ejecutarTransaccion(async (conexion) => {
-    if (!(await existeVariante(conexion, id))) {
-      throw new ErrorAplicacion(404, 'La variante no existe');
+  await conConflictos(() =>
+    ejecutarTransaccion(async (conexion) => {
+      if (!(await existeVariante(conexion, id))) {
+        throw new ErrorAplicacion(404, 'La variante no existe.');
+      }
+
+      await actualizarVarianteRepo(conexion, id, datos);
+
+      await auditar(
+        conexion,
+        actorId,
+        'ADMIN_VARIANT_UPDATED',
+        'product_variant',
+        id,
+        { campos: Object.keys(datos) },
+      );
+    }),
+  );
+}
+
+export async function ajustarStock(
+  actorId: string,
+  varianteId: string,
+  datos: AjustarStock,
+): Promise<{
+  varianteId: string;
+  stockFisicoAnterior: number;
+  stockFisico: number;
+  stockReservado: number;
+  stockDisponible: number;
+  diferencia: number;
+}> {
+  return ejecutarTransaccion(async (conexion) => {
+    const inventario = await obtenerInventarioParaAjuste(
+      conexion,
+      varianteId,
+    );
+
+    if (inventario === null) {
+      const varianteExiste = await existeVariante(conexion, varianteId);
+
+      if (!varianteExiste) {
+        throw new ErrorAplicacion(404, 'La variante no existe.');
+      }
+
+      throw new ErrorAplicacion(
+        409,
+        'La variante no tiene un registro de inventario.',
+      );
     }
 
-    await actualizarVarianteRepo(conexion, id, datos);
+    const stockFisicoAnterior = inventario.stockFisico;
+    const stockReservado = inventario.stockReservado;
+    const diferencia = datos.cantidad - stockFisicoAnterior;
+
+    if (diferencia === 0) {
+      throw new ErrorAplicacion(
+        400,
+        'La cantidad nueva debe ser diferente al stock actual.',
+      );
+    }
+
+    if (datos.cantidad < stockReservado) {
+      throw new ErrorAplicacion(
+        409,
+        'El stock físico no puede ser inferior al stock reservado.',
+      );
+    }
+
+    await actualizarStockFisico(conexion, varianteId, datos.cantidad);
+
+    await registrarMovimientoAjuste(conexion, {
+      varianteId,
+      cantidad: Math.abs(diferencia),
+      stockFisicoAnterior,
+      stockFisicoNuevo: datos.cantidad,
+      stockReservado,
+      motivo: datos.motivo,
+      actorId,
+    });
 
     await auditar(
       conexion,
       actorId,
-      'ADMIN_VARIANT_UPDATED',
+      'ADMIN_STOCK_ADJUSTED',
       'product_variant',
-      id,
-      { campos: Object.keys(datos) },
+      varianteId,
+      {
+        stockFisicoAnterior,
+        stockFisicoNuevo: datos.cantidad,
+        stockReservado,
+        diferencia,
+        motivo: datos.motivo,
+      },
     );
-  }));
+
+    return {
+      varianteId,
+      stockFisicoAnterior,
+      stockFisico: datos.cantidad,
+      stockReservado,
+      stockDisponible: datos.cantidad - stockReservado,
+      diferencia,
+    };
+  });
 }

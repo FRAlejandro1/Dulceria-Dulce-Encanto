@@ -1,7 +1,53 @@
-﻿@import './styles/theme.css';
+@import './styles/theme.css';
 @import './styles/global.css';
 @import './styles/header.css';
 @import './styles/catalog.css';
-@import './styles/product-card.css';
 @import './styles/overlays.css';
 @import './styles/responsive.css';
+
+.admin-topbar-title {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem 0.75rem;
+  text-align: center;
+}
+
+.admin-topbar-title__eyebrow {
+  margin: 0 0 0.15rem;
+  color: #9b6f86;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.admin-topbar-title h1 {
+  margin: 0;
+  color: #63483d;
+  font-size: clamp(1.05rem, 1.7vw, 1.4rem);
+  line-height: 1.15;
+}
+
+.admin-topbar-title__description {
+  margin: 0.2rem 0 0;
+  color: #82736d;
+  font-size: 0.72rem;
+  line-height: 1.3;
+}
+
+@media (max-width: 760px) {
+  .admin-topbar-title {
+    padding-inline: 0.35rem;
+  }
+
+  .admin-topbar-title__eyebrow {
+    font-size: 0.52rem;
+  }
+
+  .admin-topbar-title__description {
+    display: none;
+  }
+}

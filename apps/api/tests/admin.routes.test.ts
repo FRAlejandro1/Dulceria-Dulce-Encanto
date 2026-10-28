@@ -17,6 +17,16 @@ const {
   actualizarProducto,
   crearVariante,
   actualizarVariante,
+  ajustarStock,
+  cargarImagenCategoria,
+  eliminarImagenCategoria,
+  cargarImagenProducto,
+  eliminarImagenProducto,
+  cargarImagenVariante,
+  eliminarImagenVariante,
+  cargarImagenPrincipalVariante,
+  eliminarImagenPrincipalVariante,
+  listarImagenesAdicionalesVariante,
   buscarUsuarioPorId,
   buscarSesionActivaPorHash,
 } = vi.hoisted(() => ({
@@ -28,6 +38,16 @@ const {
   actualizarProducto: vi.fn(),
   crearVariante: vi.fn(),
   actualizarVariante: vi.fn(),
+  ajustarStock: vi.fn(),
+  cargarImagenCategoria: vi.fn(),
+  eliminarImagenCategoria: vi.fn(),
+  cargarImagenProducto: vi.fn(),
+  eliminarImagenProducto: vi.fn(),
+  cargarImagenVariante: vi.fn(),
+  eliminarImagenVariante: vi.fn(),
+  cargarImagenPrincipalVariante: vi.fn(),
+  eliminarImagenPrincipalVariante: vi.fn(),
+  listarImagenesAdicionalesVariante: vi.fn(),
   buscarUsuarioPorId: vi.fn(),
   buscarSesionActivaPorHash: vi.fn(),
 }));
@@ -41,6 +61,19 @@ vi.mock('../src/modules/admin/admin.service.js', () => ({
   actualizarProducto,
   crearVariante,
   actualizarVariante,
+  ajustarStock,
+}));
+
+vi.mock('../src/modules/admin/admin-images.service.js', () => ({
+  cargarImagenCategoria,
+  eliminarImagenCategoria,
+  cargarImagenProducto,
+  eliminarImagenProducto,
+  cargarImagenVariante,
+  eliminarImagenVariante,
+  cargarImagenPrincipalVariante,
+  eliminarImagenPrincipalVariante,
+  listarImagenesAdicionalesVariante,
 }));
 
 vi.mock('../src/modules/users/users.repository.js', () => ({
@@ -76,7 +109,7 @@ function prepararAutenticacion(rol: 'ADMIN' | 'CLIENTE' = 'ADMIN') {
 }
 
 function solicitudAdmin(
-  metodo: 'get' | 'post' | 'patch',
+  metodo: 'get' | 'post' | 'patch' | 'delete',
   ruta: string,
 ) {
   const agente = request(crearAplicacion());
@@ -131,6 +164,41 @@ beforeEach(() => {
   actualizarProducto.mockResolvedValue(undefined);
   crearVariante.mockResolvedValue({ id: '3' });
   actualizarVariante.mockResolvedValue(undefined);
+
+  ajustarStock.mockResolvedValue({
+    varianteId: '3',
+    stockFisicoAnterior: 5,
+    stockFisico: 8,
+    stockReservado: 2,
+    stockDisponible: 6,
+    diferencia: 3,
+  });
+
+  cargarImagenCategoria.mockResolvedValue({
+    imagenUrl: '/uploads/categoria.png',
+  });
+  eliminarImagenCategoria.mockResolvedValue(undefined);
+
+  cargarImagenVariante.mockResolvedValue({
+    id: '9',
+    imagenUrl: '/uploads/variante.png',
+    posicion: 1,
+  });
+  eliminarImagenVariante.mockResolvedValue(undefined);
+
+  cargarImagenProducto.mockResolvedValue({
+    imagenUrl: '/uploads/producto.png',
+  });
+
+  eliminarImagenProducto.mockResolvedValue(undefined);
+
+  cargarImagenPrincipalVariante.mockResolvedValue({
+    imagenUrl: '/uploads/variante-principal.png',
+  });
+
+  eliminarImagenPrincipalVariante.mockResolvedValue(undefined);
+
+  listarImagenesAdicionalesVariante.mockResolvedValue([]);
 });
 
 afterEach(() => {
@@ -463,6 +531,217 @@ describe('protección CSRF y validación de las rutas administrativas', () => {
       { precio: '2.50' },
     );
   });
+
+  it('ajusta el stock de una variante', async () => {
+    const respuesta = await agregarCsrf(
+      solicitudAdmin('patch', '/api/v1/admin/variants/3/stock'),
+    )
+      .send({
+        cantidad: 8,
+        motivo: 'Reposición de productos',
+      })
+      .expect(200);
+
+    expect(respuesta.body.inventario).toEqual({
+      varianteId: '3',
+      stockFisicoAnterior: 5,
+      stockFisico: 8,
+      stockReservado: 2,
+      stockDisponible: 6,
+      diferencia: 3,
+    });
+    expect(ajustarStock).toHaveBeenCalledWith(
+      '20',
+      '3',
+      {
+        cantidad: 8,
+        motivo: 'Reposición de productos',
+      },
+    );
+  });
+
+  it('rechaza un ajuste de stock inválido', async () => {
+    await agregarCsrf(
+      solicitudAdmin('patch', '/api/v1/admin/variants/3/stock'),
+    )
+      .send({
+        cantidad: -1,
+        motivo: 'x',
+      })
+      .expect(400);
+
+    expect(ajustarStock).not.toHaveBeenCalled();
+  });
+
+  it('carga una imagen de categoría', async () => {
+    const respuesta = await agregarCsrf(
+      solicitudAdmin('post', '/api/v1/admin/categories/2/image'),
+    )
+      .attach('imagen', Buffer.from('imagen'), {
+        filename: 'categoria.png',
+        contentType: 'image/png',
+      })
+      .expect(200);
+
+    expect(respuesta.body.categoria).toEqual({
+      imagenUrl: '/uploads/categoria.png',
+    });
+    expect(cargarImagenCategoria).toHaveBeenCalledWith(
+      '20',
+      '2',
+      expect.objectContaining({
+        originalname: 'categoria.png',
+      }),
+    );
+  });
+
+  it('rechaza un identificador inválido al cargar imagen de categoría', async () => {
+    await agregarCsrf(
+      solicitudAdmin('post', '/api/v1/admin/categories/0/image'),
+    )
+      .attach('imagen', Buffer.from('imagen'), {
+        filename: 'categoria.png',
+        contentType: 'image/png',
+      })
+      .expect(400);
+
+    expect(cargarImagenCategoria).not.toHaveBeenCalled();
+  });
+
+  it('rechaza un identificador inválido al eliminar una imagen de categoría', async () => {
+    const respuesta = await agregarCsrf(
+      solicitudAdmin('delete', '/api/v1/admin/categories/0/image'),
+    ).expect(400);
+
+    expect(respuesta.body).toEqual({
+      error: 'Identificador de categoría inválido',
+    });
+    expect(eliminarImagenCategoria).not.toHaveBeenCalled();
+  });
+  it('elimina una imagen de categoría', async () => {
+    const respuesta = await agregarCsrf(
+      solicitudAdmin('delete', '/api/v1/admin/categories/2/image'),
+    ).expect(200);
+
+    expect(respuesta.body).toEqual({
+      mensaje: 'Imagen de categoría eliminada',
+    });
+    expect(eliminarImagenCategoria).toHaveBeenCalledWith('20', '2');
+  });
+
+  it('carga una imagen de variante', async () => {
+    const respuesta = await agregarCsrf(
+      solicitudAdmin('post', '/api/v1/admin/variants/3/images'),
+    )
+      .field('posicion', '1')
+      .attach('imagen', Buffer.from('imagen'), {
+        filename: 'variante.png',
+        contentType: 'image/png',
+      })
+      .expect(200);
+
+    expect(respuesta.body.imagen).toEqual({
+      id: '9',
+      imagenUrl: '/uploads/variante.png',
+      posicion: 1,
+    });
+    expect(cargarImagenVariante).toHaveBeenCalledWith(
+      '20',
+      '3',
+      expect.objectContaining({
+        originalname: 'variante.png',
+      }),
+      1,
+    );
+  });
+
+  it('rechaza una posición inválida para una imagen de variante', async () => {
+    await agregarCsrf(
+      solicitudAdmin('post', '/api/v1/admin/variants/3/images'),
+    )
+      .field('posicion', '4')
+      .attach('imagen', Buffer.from('imagen'), {
+        filename: 'variante.png',
+        contentType: 'image/png',
+      })
+      .expect(400);
+
+    expect(cargarImagenVariante).not.toHaveBeenCalled();
+  });
+
+  it('rechaza un tipo MIME no permitido', async () => {
+    await agregarCsrf(
+      solicitudAdmin('post', '/api/v1/admin/categories/2/image'),
+    )
+      .attach('imagen', Buffer.from('texto'), {
+        filename: 'documento.txt',
+        contentType: 'text/plain',
+      })
+      .expect(400);
+
+    expect(cargarImagenCategoria).not.toHaveBeenCalled();
+  });
+
+  it('elimina una imagen de variante', async () => {
+    const respuesta = await agregarCsrf(
+      solicitudAdmin('delete', '/api/v1/admin/variants/3/images/9'),
+    ).expect(200);
+
+    expect(respuesta.body).toEqual({
+      mensaje: 'Imagen de variante eliminada',
+    });
+    expect(eliminarImagenVariante).toHaveBeenCalledWith(
+      '20',
+      '3',
+      '9',
+    );
+  });
+
+  it('rechaza identificadores inválidos al eliminar una imagen de variante', async () => {
+    await agregarCsrf(
+      solicitudAdmin('delete', '/api/v1/admin/variants/0/images/9'),
+    ).expect(400);
+
+    expect(eliminarImagenVariante).not.toHaveBeenCalled();
+  });
+
+  it('rechaza un identificador inválido al cargar la imagen principal de una variante', async () => {
+    await agregarCsrf(
+      solicitudAdmin('post', '/api/v1/admin/variants/0/image'),
+    )
+      .attach('imagen', Buffer.from('imagen'), {
+        filename: 'variante.png',
+        contentType: 'image/png',
+      })
+      .expect(400);
+
+    expect(cargarImagenPrincipalVariante).not.toHaveBeenCalled();
+  });
+
+  it('rechaza un identificador inválido al eliminar la imagen de un producto', async () => {
+    await agregarCsrf(
+      solicitudAdmin('delete', '/api/v1/admin/products/0/image'),
+    ).expect(400);
+
+    expect(eliminarImagenProducto).not.toHaveBeenCalled();
+  });
+
+  it('rechaza un identificador inválido al eliminar la imagen principal de una variante', async () => {
+    await agregarCsrf(
+      solicitudAdmin('delete', '/api/v1/admin/variants/0/image'),
+    ).expect(400);
+
+    expect(eliminarImagenPrincipalVariante).not.toHaveBeenCalled();
+  });
+
+  it('rechaza un identificador inválido al consultar imágenes adicionales de una variante', async () => {
+    await solicitudAdmin(
+      'get',
+      '/api/v1/admin/variants/0/images',
+    ).expect(400);
+
+    expect(listarImagenesAdicionalesVariante).not.toHaveBeenCalled();
+  });
 });
 
 describe('errores de las rutas administrativas', () => {
@@ -588,6 +867,267 @@ describe('errores de las rutas administrativas', () => {
       solicitudAdmin('patch', '/api/v1/admin/variants/3'),
     )
       .send({ precio: '2.50' })
+      .expect(500);
+
+    expect(respuesta.body).toEqual({
+      error: 'Error interno del servidor',
+    });
+  });
+
+  it('propaga errores al ajustar stock', async () => {
+    ajustarStock.mockRejectedValueOnce(
+      new Error('Error de stock'),
+    );
+
+    const respuesta = await agregarCsrf(
+      solicitudAdmin('patch', '/api/v1/admin/variants/3/stock'),
+    )
+      .send({
+        cantidad: 8,
+        motivo: 'Reposición de productos',
+      })
+      .expect(500);
+
+    expect(respuesta.body).toEqual({
+      error: 'Error interno del servidor',
+    });
+  });
+
+  it('propaga errores al cargar una imagen de categoría', async () => {
+    cargarImagenCategoria.mockRejectedValueOnce(
+      new Error('Error al cargar imagen de categoría'),
+    );
+
+    const respuesta = await agregarCsrf(
+      solicitudAdmin('post', '/api/v1/admin/categories/2/image'),
+    )
+      .attach('imagen', Buffer.from('imagen'), {
+        filename: 'categoria.png',
+        contentType: 'image/png',
+      })
+      .expect(500);
+
+    expect(respuesta.body).toEqual({
+      error: 'Error interno del servidor',
+    });
+  });
+
+  it('propaga errores al eliminar una imagen de categoría', async () => {
+    eliminarImagenCategoria.mockRejectedValueOnce(
+      new Error('Error al eliminar imagen de categoría'),
+    );
+
+    const respuesta = await agregarCsrf(
+      solicitudAdmin('delete', '/api/v1/admin/categories/2/image'),
+    ).expect(500);
+
+    expect(respuesta.body).toEqual({
+      error: 'Error interno del servidor',
+    });
+  });
+
+  it('propaga errores al cargar una imagen de variante', async () => {
+    cargarImagenVariante.mockRejectedValueOnce(
+      new Error('Error al cargar imagen de variante'),
+    );
+
+    const respuesta = await agregarCsrf(
+      solicitudAdmin('post', '/api/v1/admin/variants/3/images'),
+    )
+      .field('posicion', '1')
+      .attach('imagen', Buffer.from('imagen'), {
+        filename: 'variante.png',
+        contentType: 'image/png',
+      })
+      .expect(500);
+
+    expect(respuesta.body).toEqual({
+      error: 'Error interno del servidor',
+    });
+  });
+
+  it('propaga errores al eliminar una imagen de variante', async () => {
+    eliminarImagenVariante.mockRejectedValueOnce(
+      new Error('Error al eliminar imagen de variante'),
+    );
+
+    const respuesta = await agregarCsrf(
+      solicitudAdmin('delete', '/api/v1/admin/variants/3/images/9'),
+    ).expect(500);
+
+    expect(respuesta.body).toEqual({
+      error: 'Error interno del servidor',
+    });
+  });
+
+  it('propaga errores al eliminar la imagen de un producto', async () => {
+    eliminarImagenProducto.mockRejectedValueOnce(
+      new Error('Error al eliminar imagen de producto'),
+    );
+
+    const respuesta = await agregarCsrf(
+      solicitudAdmin('delete', '/api/v1/admin/products/2/image'),
+    ).expect(500);
+
+    expect(respuesta.body).toEqual({
+      error: 'Error interno del servidor',
+    });
+  });
+
+  it('propaga errores al cargar la imagen principal de una variante', async () => {
+    cargarImagenPrincipalVariante.mockRejectedValueOnce(
+      new Error('Error al cargar imagen principal de variante'),
+    );
+
+    const respuesta = await agregarCsrf(
+      solicitudAdmin('post', '/api/v1/admin/variants/3/image'),
+    )
+      .attach('imagen', Buffer.from('imagen'), {
+        filename: 'variante.png',
+        contentType: 'image/png',
+      })
+      .expect(500);
+
+    expect(respuesta.body).toEqual({
+      error: 'Error interno del servidor',
+    });
+  });
+
+  it('propaga errores al eliminar la imagen principal de una variante', async () => {
+    eliminarImagenPrincipalVariante.mockRejectedValueOnce(
+      new Error('Error al eliminar imagen principal de variante'),
+    );
+
+    const respuesta = await agregarCsrf(
+      solicitudAdmin('delete', '/api/v1/admin/variants/3/image'),
+    ).expect(500);
+
+    expect(respuesta.body).toEqual({
+      error: 'Error interno del servidor',
+    });
+  });
+
+  it('propaga errores al consultar imágenes adicionales de una variante', async () => {
+    listarImagenesAdicionalesVariante.mockRejectedValueOnce(
+      new Error('Error al consultar imágenes adicionales'),
+    );
+
+    const respuesta = await solicitudAdmin(
+      'get',
+      '/api/v1/admin/variants/3/images',
+    ).expect(500);
+
+    expect(respuesta.body).toEqual({
+      error: 'Error interno del servidor',
+    });
+  });
+
+
+  it('carga una imagen de producto', async () => {
+    const respuesta = await agregarCsrf(
+      solicitudAdmin('post', '/api/v1/admin/products/2/image'),
+    )
+      .attach('imagen', Buffer.from('imagen'), {
+        filename: 'producto.png',
+        contentType: 'image/png',
+      })
+      .expect(200);
+
+    expect(respuesta.body.imagen).toEqual({
+      imagenUrl: '/uploads/producto.png',
+    });
+    expect(cargarImagenProducto).toHaveBeenCalledWith(
+      '20',
+      '2',
+      expect.objectContaining({ originalname: 'producto.png' }),
+    );
+  });
+
+  it('rechaza un identificador inválido al cargar una imagen de producto', async () => {
+    const respuesta = await agregarCsrf(
+      solicitudAdmin('post', '/api/v1/admin/products/0/image'),
+    )
+      .attach('imagen', Buffer.from('imagen'), {
+        filename: 'producto.png',
+        contentType: 'image/png',
+      })
+      .expect(400);
+
+    expect(respuesta.body).toEqual({
+      error: 'Identificador de producto inválido',
+    });
+    expect(cargarImagenProducto).not.toHaveBeenCalled();
+  });
+  it('elimina una imagen de producto', async () => {
+    const respuesta = await agregarCsrf(
+      solicitudAdmin('delete', '/api/v1/admin/products/2/image'),
+    ).expect(200);
+
+    expect(respuesta.body).toEqual({
+      mensaje: 'Imagen de producto eliminada',
+    });
+    expect(eliminarImagenProducto).toHaveBeenCalledWith('20', '2');
+  });
+
+  it('carga la imagen principal de una variante', async () => {
+    const respuesta = await agregarCsrf(
+      solicitudAdmin('post', '/api/v1/admin/variants/3/image'),
+    )
+      .attach('imagen', Buffer.from('imagen'), {
+        filename: 'variante.png',
+        contentType: 'image/png',
+      })
+      .expect(200);
+
+    expect(respuesta.body.imagen).toEqual({
+      imagenUrl: '/uploads/variante-principal.png',
+    });
+    expect(cargarImagenPrincipalVariante).toHaveBeenCalledWith(
+      '20',
+      '3',
+      expect.objectContaining({ originalname: 'variante.png' }),
+    );
+  });
+
+  it('elimina la imagen principal de una variante', async () => {
+    const respuesta = await agregarCsrf(
+      solicitudAdmin('delete', '/api/v1/admin/variants/3/image'),
+    ).expect(200);
+
+    expect(respuesta.body).toEqual({
+      mensaje: 'Imagen principal de variante eliminada',
+    });
+    expect(eliminarImagenPrincipalVariante).toHaveBeenCalledWith('20', '3');
+  });
+
+  it('consulta las imágenes adicionales de una variante', async () => {
+    listarImagenesAdicionalesVariante.mockResolvedValueOnce([
+      { id: '9', imagenUrl: '/uploads/variante-extra.png', posicion: 1 },
+    ]);
+
+    const respuesta = await solicitudAdmin(
+      'get',
+      '/api/v1/admin/variants/3/images',
+    ).expect(200);
+
+    expect(respuesta.body.imagenes).toEqual([
+      { id: '9', imagenUrl: '/uploads/variante-extra.png', posicion: 1 },
+    ]);
+    expect(listarImagenesAdicionalesVariante).toHaveBeenCalledWith('3');
+  });
+
+  it('propaga errores al cargar una imagen de producto', async () => {
+    cargarImagenProducto.mockRejectedValueOnce(
+      new Error('Error al cargar imagen de producto'),
+    );
+
+    const respuesta = await agregarCsrf(
+      solicitudAdmin('post', '/api/v1/admin/products/2/image'),
+    )
+      .attach('imagen', Buffer.from('imagen'), {
+        filename: 'producto.png',
+        contentType: 'image/png',
+      })
       .expect(500);
 
     expect(respuesta.body).toEqual({

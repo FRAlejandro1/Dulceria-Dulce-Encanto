@@ -101,7 +101,16 @@
 }
 
 .sort-control {
-  justify-content: flex-end;
+  align-items: stretch;
+  flex-direction: column;
+  gap: 6px;
+  white-space: normal;
+}
+
+.sort-control .sort-select {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
 }
 
 .sort-select,
@@ -246,4 +255,13 @@
   color: var(--color-secundario);
   text-align: center;
   font-size: 14px;
+}
+
+
+/* Cuadr�cula del cat�logo de clientes */
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 24px;
+  align-items: stretch;
 }

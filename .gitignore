@@ -12,3 +12,6 @@ coverage/
 Thumbs.db
 .vscode/*
 !.vscode/extensions.json
+
+# Imágenes cargadas localmente por la API
+apps/api/uploads/
