@@ -30,15 +30,22 @@ import {
 } from './admin.repository.js';
 
 function normalizarSlug(valor: string): string {
-  return valor
+  const slug = valor
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
     .trim()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+/, '')
-    .slice(0, 120)
-    .replace(/-+$/, '');
+    .slice(0, 120);
+
+  let fin = slug.length;
+
+  while (fin > 0 && slug[fin - 1] === '-') {
+    fin--;
+  }
+
+  return slug.slice(0, fin);
 }
 
 function mensajeDeConflicto(error: unknown): boolean {
