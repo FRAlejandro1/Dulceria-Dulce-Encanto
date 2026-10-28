@@ -409,7 +409,7 @@ function ProductList({
               />
             ) : (
               <div className="admin-create-product-form__image-placeholder">
-                <span aria-hidden="true">ï¼‹</span>
+                <span aria-hidden="true">+‹</span>
                 <strong>Imagen del producto</strong>
                 <span>Arrastra una imagen aquí o selecciona un archivo</span>
               </div>
@@ -604,9 +604,7 @@ function ProductList({
                       : 'admin-product__chevron'
                   }
                   aria-hidden="true"
-                >
-                  âŒ„
-                </span>
+                />
               </button>
 
               {expandido && (
