@@ -24,4 +24,4 @@ jobs:
         run: npm ci --no-audit --no-fund
 
       - name: Probar comportamiento HTTP de Express
-        run: npm run test --workspace @dulceria/api -- tests/app.test.ts
+        run: npm run test --workspace @dulceria/api -- tests/app/app.test.ts

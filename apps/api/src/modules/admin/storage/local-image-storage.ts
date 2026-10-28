@@ -1,4 +1,4 @@
-﻿import { randomUUID } from 'node:crypto';
+import { randomUUID } from 'node:crypto';
 import { mkdir, unlink, writeFile } from 'node:fs/promises';
 import { basename, resolve, sep } from 'node:path';
 import sharp, { type Metadata } from 'sharp';
@@ -68,7 +68,7 @@ function analizarMime(
 function esErrorImagenProcesamiento(error: unknown): boolean {
   return error instanceof ErrorImagenInvalida ||
     (error instanceof Error &&
-      /sharp|input buffer|unsupported image|invalid image|corrupt|pixellimit/i.test(
+      /sharp|input buffer|unsupported image|invalid image|corrupt|pixel\s*limit/i.test(
         error.message,
       ));
 }
@@ -202,15 +202,6 @@ export class AlmacenamientoImagenesLocal implements AlmacenamientoImagenes {
 
     const tipo = coincidencia[1];
     const nombreBase = coincidencia[2];
-
-    if (
-      (tipo !== 'category' &&
-        tipo !== 'product' &&
-        tipo !== 'variant') ||
-      nombreBase === undefined
-    ) {
-      return null;
-    }
 
     return `${tipo}/${nombreBase}`;
   }

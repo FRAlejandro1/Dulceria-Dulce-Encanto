@@ -1,4 +1,4 @@
-﻿import type { PoolConnection } from 'mysql2/promise';
+import type { PoolConnection } from 'mysql2/promise';
 import { describe, expect, it, vi } from 'vitest';
 
 import { registrarAuditoria } from '../src/modules/audit/audit.repository.js';
