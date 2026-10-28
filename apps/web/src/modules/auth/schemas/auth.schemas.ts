@@ -15,7 +15,7 @@ export function validarInicioSesion(
   const errores: ResultadoValidacion<DatosInicioSesion>['errores'] = {}
   const correo = entrada.correo.trim().toLowerCase()
 
-  if (!correo || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) {
+  if (!correo || !/^[^\s@]+@[^\s@.]+(?:\.[^\s@.]+)+$/.test(correo)) {
     errores.correo = 'Introduce un correo electrónico válido.'
   } else if (correo.length > 254) {
     errores.correo = 'El correo no puede superar 254 caracteres.'
@@ -48,7 +48,7 @@ export function validarRegistro(
     errores.nombre = 'El nombre debe tener entre 2 y 120 caracteres.'
   }
 
-  if (!correo || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) {
+  if (!correo || !/^[^\s@]+@[^.\s@]+(?:\.[^.\s@]+)+$/.test(correo)) {
     errores.correo = 'Introduce un correo electrónico válido.'
   } else if (correo.length > 254) {
     errores.correo = 'El correo no puede superar 254 caracteres.'

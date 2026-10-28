@@ -455,14 +455,20 @@
   height: 24px;
   place-items: center;
   color: var(--color-acento);
-  font-size: 1.2rem;
-  line-height: 1;
-  transform: rotate(0deg);
   transition: transform 180ms ease;
 }
 
-.admin-product__chevron--open {
-  transform: rotate(180deg);
+.admin-product__chevron::before {
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  content: '';
+  transform: translateY(-2px) rotate(45deg);
+}
+
+.admin-product__chevron--open::before {
+  transform: translateY(2px) rotate(225deg);
 }
 
 /* Panel de variantes desplegadas */
