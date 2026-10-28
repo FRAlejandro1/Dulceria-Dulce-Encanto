@@ -540,19 +540,45 @@ describe('AdminPanel', () => {
     expect(screen.queryByLabelText('Resumen del inventario')).toBeNull()
   })
 
+
   it('guarda la descripción del producto y vuelve a cargar el inventario', async () => {
-    vi.mocked(obtenerProductosAdmin).mockResolvedValue(productos)
+    vi.mocked(obtenerProductosAdmin).mockResolvedValue([
+      crearProducto('1', 'Chocolate', 'Dulces', {
+        descripcion: 'Chocolate oscuro',
+        imagenUrl: '/chocolate.png',
+        variantes: [
+          crearVariante('ch-1', '5.00', 5),
+          crearVariante('ch-2', '2.50', 3),
+        ],
+      }),
+      crearProducto('2', 'Caramelo', 'Confites', {
+        descripcion: 'Caramelo de menta',
+        variantes: [crearVariante('ca-1', '1.25', 7)],
+      }),
+    ])
 
     render(<AdminPanel alVolverATienda={vi.fn()} />)
 
-    await screen.findByRole('heading', { name: 'Chocolate' })
+    const detalle = await screen.findByRole('region', {
+      name: 'Detalle de Chocolate',
+    })
 
-    fireEvent.change(
-      screen.getByRole('textbox', { name: 'Descripción del producto' }),
-      { target: { value: 'Chocolate artesanal' } },
-    )
+    const obtenerCampoDescripcion = () =>
+      within(detalle).getByRole('textbox', {
+        name: 'Descripción del producto',
+      }) as HTMLTextAreaElement
 
-    const botonGuardar = screen.getByRole('button', {
+    fireEvent.change(obtenerCampoDescripcion(), {
+      target: { value: 'Chocolate artesanal' },
+    })
+
+    await waitFor(() => {
+      expect(obtenerCampoDescripcion().value).toBe(
+        'Chocolate artesanal',
+      )
+    })
+
+    const botonGuardar = within(detalle).getByRole('button', {
       name: 'Guardar cambios',
     })
 
@@ -575,6 +601,7 @@ describe('AdminPanel', () => {
       expect(obtenerProductosAdmin).toHaveBeenCalledTimes(2)
     })
   })
+
 
   it('guarda los cambios de variante y ajusta el stock de la misma variante', async () => {
     vi.mocked(obtenerProductosAdmin).mockResolvedValue(productos)

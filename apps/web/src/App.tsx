@@ -1,5 +1,4 @@
-﻿
-import { lazy, Suspense, useCallback, useState } from 'react'
+﻿import { lazy, Suspense, useCallback, useState } from 'react'
 import './App.css'
 import type { Producto } from './types/catalogo.types'
 import { useCatalog } from './modules/catalog/hooks/useCatalog'
@@ -13,6 +12,7 @@ import FloatingPanel from './modules/app/components/FloatingPanel'
 import AppFooter from './modules/app/components/AppFooter'
 import { useAppSession } from './modules/app/hooks/useAppSession'
 import { useProductActions } from './modules/app/hooks/useProductActions'
+import { useFavorites } from './modules/favorites/hooks/useFavorites'
 import Toast from './modules/notifications/Toast'
 
 const Auth = lazy(() => import('./modules/auth/Auth'))
@@ -49,6 +49,11 @@ function App() {
     setPanel,
   })
 
+  const { favoritos, alternarFavorito } = useFavorites(
+    usuario,
+    setAviso,
+  )
+
   const {
     busqueda,
     setBusqueda,
@@ -56,14 +61,15 @@ function App() {
     setCategoria,
     orden,
     setOrden,
-    favoritos,
     verFavoritos,
     setVerFavoritos,
     categorias,
     productosVisibles,
-    alternarFavorito,
     restablecerFiltros: restablecerFiltrosCatalogo,
-  } = useCatalogFilters(productos)
+  } = useCatalogFilters(productos, {
+    favoritos,
+    alternarFavorito,
+  })
 
   const {
     restablecerFiltros,
