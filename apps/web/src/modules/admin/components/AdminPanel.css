@@ -1,0 +1,182 @@
+.admin-panel {
+  width: min(calc(100% - 3rem), 1480px);
+  min-width: 0;
+  margin: 0 auto;
+  padding: 0.65rem 0 1.5rem;
+  color: var(--color-texto);
+  box-sizing: border-box;
+}
+
+.admin-panel *,
+.admin-panel *::before,
+.admin-panel *::after {
+  box-sizing: border-box;
+}
+
+.admin-panel__status {
+  margin: 1rem 0;
+  color: var(--color-secundario);
+  font-size: 0.9rem;
+}
+
+.admin-panel__error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 0.5rem 0 1rem;
+  padding: 1rem;
+  border: 1px solid var(--color-borde);
+  border-radius: 14px;
+  background: var(--color-superficie);
+  color: var(--color-texto);
+}
+
+.admin-panel__error p {
+  margin: 0;
+  color: var(--color-secundario);
+  font-size: 0.85rem;
+}
+
+.admin-panel__error button {
+  flex: 0 0 auto;
+  padding: 0.6rem 0.9rem;
+  border: 0;
+  border-radius: 9px;
+  background: var(--color-acento);
+  color: #fff;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.admin-panel__error button:hover {
+  background: var(--color-acento-hover);
+}
+
+.admin-panel__error button:focus-visible {
+  outline: 3px solid var(--color-acento);
+  outline-offset: 3px;
+}
+
+.admin-panel > .admin-inventory-summary {
+  min-width: 0;
+  margin-bottom: 0.8rem;
+}
+
+/* Cuadrícula principal: catálogo a la izquierda y detalle a la derecha. */
+.admin-inventory {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.4fr);
+  grid-template-rows: auto;
+  align-items: start;
+  justify-content: stretch;
+  gap: 1.25rem;
+  width: 100%;
+  min-width: 0;
+  margin: 0.7rem 0 0;
+}
+
+/* Coloca los dos componentes según su orden real en AdminPanel.tsx. */
+.admin-inventory > :first-child {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.admin-inventory > :last-child {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+/* Evita que los estilos internos desplacen los paneles fuera de la cuadrícula. */
+.admin-inventory > * {
+  position: static !important;
+  inset: auto !important;
+  float: none !important;
+  transform: none;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  margin: 0;
+  align-self: start;
+  justify-self: stretch;
+}
+
+.admin-inventory img,
+.admin-inventory input,
+.admin-inventory button,
+.admin-inventory select,
+.admin-inventory textarea {
+  max-width: 100%;
+}
+
+.admin-inventory img {
+  height: auto;
+}
+
+/* Escritorios grandes. */
+@media (min-width: 1200px) {
+  .admin-panel {
+    width: min(calc(100% - 3rem), 1480px);
+    padding-top: 0.45rem;
+  }
+
+  .admin-inventory {
+    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.4fr);
+    gap: 1.25rem;
+    margin-top: 0.6rem;
+  }
+}
+
+@media (min-width: 1500px) {
+  .admin-inventory {
+    grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.38fr);
+    gap: 1.4rem;
+  }
+}
+
+/* En tablet y móvil, cada panel ocupa una fila independiente. */
+@media (max-width: 900px) {
+  .admin-panel {
+    width: min(calc(100% - 1.5rem), 760px);
+  }
+
+  .admin-inventory {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    gap: 1rem;
+    margin-top: 0.8rem;
+  }
+
+  .admin-inventory > :first-child {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .admin-inventory > :last-child {
+    grid-column: 1;
+    grid-row: 2;
+  }
+}
+
+@media (max-width: 520px) {
+  .admin-panel {
+    width: calc(100% - 1rem);
+    padding-top: 0.5rem;
+  }
+
+  .admin-inventory {
+    gap: 0.8rem;
+    margin-top: 0.7rem;
+  }
+
+  .admin-panel__error {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .admin-panel__error button {
+    width: 100%;
+  }
+}

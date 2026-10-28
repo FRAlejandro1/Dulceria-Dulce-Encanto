@@ -1,0 +1,240 @@
+.topbar {
+  position: sticky;
+  z-index: 10;
+  top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 17px max(5%, calc((100% - 1280px) / 2));
+  border-bottom: 1px solid var(--color-borde);
+  background: var(--color-superficie);
+}
+
+.brand {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 11px;
+}
+
+.brand__copy {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.brand__mark {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  place-items: center;
+  border-radius: 15px;
+  background: var(--color-acento-suave);
+  color: var(--color-acento-hover);
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 21px;
+  font-weight: 700;
+}
+
+.brand__name {
+  display: block;
+  margin: 0;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 21px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+.brand__tagline {
+  display: block;
+  margin: 0;
+  color: var(--color-texto);
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.2px;
+  line-height: 1.4;
+}
+
+.main-nav {
+  display: flex;
+  align-items: center;
+  gap: 27px;
+}
+
+.main-nav__item {
+  position: relative;
+  padding: 9px 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-secundario);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.main-nav__item:hover,
+.main-nav__item--active {
+  color: var(--color-acento-hover);
+}
+
+.main-nav__item--active::after {
+  position: absolute;
+  right: 0;
+  bottom: -18px;
+  left: 0;
+  height: 2px;
+  background: var(--color-acento);
+  content: '';
+}
+
+.header-actions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 9px;
+}
+
+.icon-button {
+  position: relative;
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: 13px;
+  background: transparent;
+  color: var(--color-texto);
+  cursor: pointer;
+  transition: background-color 160ms ease, border-color 160ms ease;
+}
+
+.icon-button:hover {
+  border-color: var(--color-borde);
+  background: var(--color-fondo);
+}
+
+.icon-button svg {
+  width: 19px;
+  height: 19px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.7;
+}
+
+.icon-button__badge {
+  position: absolute;
+  top: 1px;
+  right: 0;
+  display: grid;
+  min-width: 19px;
+  min-height: 19px;
+  padding: 0 4px;
+  place-items: center;
+  border: 2px solid var(--color-superficie);
+  border-radius: 20px;
+  background: var(--color-acento);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.profile-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px 4px 4px;
+  border: 1px solid var(--color-borde);
+  border-radius: 24px;
+  background: var(--color-superficie);
+  cursor: pointer;
+}
+
+.profile-button__avatar {
+  display: grid;
+  width: 31px;
+  height: 31px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--color-acento-suave);
+  color: var(--color-acento-hover);
+}
+
+.profile-button__avatar svg {
+  width: 17px;
+  height: 17px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.7;
+}
+
+.profile-button__label {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.nav-count {
+  display: inline-grid;
+  min-width: 19px;
+  min-height: 19px;
+  margin-left: 4px;
+  padding: 0 4px;
+  place-items: center;
+  border-radius: 20px;
+  background: var(--color-acento-suave);
+  color: var(--color-acento-hover);
+  font-size: 11px;
+}
+
+.notification-dot {
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--color-acento);
+}
+
+.header-popover-anchor {
+  position: relative;
+}
+
+.footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 22px 5%;
+  border-top: 1px solid var(--color-borde);
+  color: var(--color-secundario);
+  text-align: center;
+  font-size: 12px;
+}
+
+.footer p {
+  margin: 0;
+}
+
+.footer a {
+  color: var(--color-secundario);
+  text-decoration: none;
+}
+
+.footer a:hover {
+  color: var(--color-acento-hover);
+}
+
+.footer__mark {
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  font-size: 14px;
+}

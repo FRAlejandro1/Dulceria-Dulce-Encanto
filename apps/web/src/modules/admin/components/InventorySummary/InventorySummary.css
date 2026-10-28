@@ -1,0 +1,42 @@
+
+.admin-panel__metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.admin-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+  padding: 1.25rem;
+  background: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-radius: 1rem;
+  box-shadow: var(--color-sombra);
+}
+
+.admin-metric span {
+  color: var(--color-secundario);
+  font-size: 0.875rem;
+}
+
+.admin-metric strong {
+  color: var(--color-texto);
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+@media (max-width: 640px) {
+  .admin-panel__metrics {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .admin-metric {
+    padding: 1rem;
+  }
+}

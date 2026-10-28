@@ -1,0 +1,64 @@
+name: SonarCloud
+
+on:
+  workflow_call:
+    secrets:
+      SONAR_TOKEN_DULCERIA:
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    name: SonarCloud · Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar el codigo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Descargar cobertura frontend
+        uses: actions/download-artifact@v4
+        with:
+          name: web-coverage
+          path: apps/web/coverage
+
+      - name: Descargar cobertura backend
+        uses: actions/download-artifact@v4
+        with:
+          name: api-coverage
+          path: apps/api/coverage
+
+      - name: Validar configuracion de SonarCloud
+        env:
+          SONAR_PROJECT_KEY: ${{ vars.SONAR_PROJECT_KEY_DULCERIA }}
+          SONAR_ORGANIZATION: ${{ vars.SONAR_ORGANIZATION_DULCERIA }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN_DULCERIA }}
+        shell: bash
+        run: |
+          test -n "$SONAR_PROJECT_KEY" || {
+            echo "::error::La variable SONAR_PROJECT_KEY_DULCERIA esta vacia"
+            exit 1
+          }
+
+          test -n "$SONAR_ORGANIZATION" || {
+            echo "::error::La variable SONAR_ORGANIZATION_DULCERIA esta vacia"
+            exit 1
+          }
+
+          test -n "$SONAR_TOKEN" || {
+            echo "::error::El secreto SONAR_TOKEN_DULCERIA esta vacio"
+            exit 1
+          }
+
+      - name: Analizar con SonarCloud
+        uses: SonarSource/sonarcloud-github-action@v3
+        with:
+          args: >-
+            -Dsonar.projectKey=${{ vars.SONAR_PROJECT_KEY_DULCERIA }}
+            -Dsonar.organization=${{ vars.SONAR_ORGANIZATION_DULCERIA }}
+            -Dsonar.branch.name=main
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN_DULCERIA }}

@@ -1,0 +1,50 @@
+.app {
+  --color-fondo: #fbf8f5;
+  --color-superficie: #ffffff;
+  --color-texto: #3e302c;
+  --color-texto-negro: #171717;
+  --color-secundario: #75625b;
+  --color-acento: #a84458;
+  --color-acento-hover: #873449;
+  --color-acento-suave: #f9e8eb;
+  --color-borde: #e5d8d2;
+  --color-etiqueta: #f4e8dc;
+  --color-sombra: 0 8px 28px rgb(76 48 40 / 5%);
+  --font-size-eyebrow: 0.875rem;
+  min-height: 100vh;
+  background: var(--color-fondo);
+  color: var(--color-texto);
+  transition: background-color 180ms ease, color 180ms ease;
+}
+
+.app--dark {
+  --color-fondo: #201b1a;
+  --color-superficie: #2b2422;
+  --color-texto: #f8eee8;
+  --color-texto-negro: #171717;
+  --color-secundario: #d0bdb4;
+  --color-acento: #e58b9a;
+  --color-acento-hover: #f0a0ad;
+  --color-acento-suave: #493036;
+  --color-borde: #594842;
+  --color-etiqueta: #45362d;
+  --color-sombra: 0 8px 28px rgb(0 0 0 / 15%);
+}
+
+/* Los botones con texto blanco usan un rosa más oscuro en el tema oscuro. */
+.app--dark .icon-button__badge,
+.app--dark .category-chip--active,
+.app--dark .product-card__add,
+.app--dark .empty-state__reset,
+.app--dark .floating-panel__action {
+  background: #873449;
+  color: #ffffff;
+}
+
+.app--dark .category-chip--active:hover,
+.app--dark .product-card__add:hover,
+.app--dark .empty-state__reset:hover,
+.app--dark .floating-panel__action:hover {
+  background: #6f293a;
+  color: #ffffff;
+}

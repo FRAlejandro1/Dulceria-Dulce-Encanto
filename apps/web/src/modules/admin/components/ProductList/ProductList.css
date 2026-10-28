@@ -1,0 +1,776 @@
+/* Contenedor principal de la lista */
+.admin-inventory__list {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+  padding: 1rem;
+  border: 1px solid var(--color-borde);
+  border-radius: 20px;
+  background: var(--color-superficie);
+  color: var(--color-texto);
+  box-shadow: var(--color-sombra);
+  box-sizing: border-box;
+}
+
+/* Encabezado */
+.admin-inventory__list-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+  margin-bottom: 0.9rem;
+}
+
+.admin-inventory__list-heading>div {
+  flex: 1 1 160px;
+  min-width: 0;
+}
+
+.admin-section__eyebrow {
+  margin: 0 0 0.25rem;
+  color: var(--color-acento-hover);
+  font-size: var(--font-size-eyebrow);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  line-height: 1.4;
+}
+
+.admin-inventory__list-heading h2 {
+  margin: 0;
+  color: var(--color-texto);
+  font-size: 1.2rem;
+  line-height: 1.25;
+}
+
+.admin-section__description {
+  margin: 0.3rem 0 0;
+  color: var(--color-secundario);
+  font-size: 0.77rem;
+  line-height: 1.45;
+}
+
+.admin-product-list__count {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid var(--color-borde);
+  border-radius: 12px;
+  background: var(--color-acento-suave);
+  color: var(--color-acento);
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
+/* Botón para crear productos */
+.admin-create-product-button {
+  flex: 0 0 auto;
+  border: 1px solid var(--color-acento);
+  border-radius: 10px;
+  padding: 0.65rem 0.8rem;
+  background: var(--color-acento);
+  color: #fff;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.app--dark .admin-create-product-button {
+  color: var(--color-texto-negro);
+}
+
+.admin-create-product-button:hover {
+  filter: brightness(0.96);
+}
+
+.admin-create-product-button:focus-visible {
+  outline: 3px solid var(--color-acento);
+  outline-offset: 3px;
+}
+
+/* Formulario de creación */
+.admin-create-product-form {
+  display: grid;
+  min-width: 0;
+  gap: 0.85rem;
+  margin: 1rem 0;
+  padding: 1rem;
+  border: 1px solid var(--color-borde);
+  border-radius: 14px;
+  background: var(--color-superficie);
+  box-sizing: border-box;
+}
+
+.admin-create-product-form h3,
+.admin-create-product-form h4 {
+  margin: 0;
+  color: var(--color-texto);
+}
+
+.admin-create-product-form label {
+  display: grid;
+  min-width: 0;
+  gap: 0.35rem;
+  color: var(--color-texto);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.admin-create-product-form input,
+.admin-create-product-form textarea,
+.admin-create-product-form select {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--color-borde);
+  border-radius: 9px;
+  padding: 0.65rem 0.7rem;
+  background: var(--color-superficie);
+  color: var(--color-texto);
+  font: inherit;
+  font-weight: 400;
+}
+
+.admin-create-product-form textarea {
+  resize: vertical;
+}
+
+.admin-create-product-form input:focus-visible,
+.admin-create-product-form textarea:focus-visible,
+.admin-create-product-form select:focus-visible {
+  outline: 2px solid var(--color-acento);
+  outline-offset: 2px;
+}
+
+.admin-create-product-form__error {
+  margin: 0;
+  color: #b42318;
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
+.admin-create-product-form__image {
+  display: grid;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.admin-create-product-form__image p {
+  margin: 0;
+  color: var(--color-secundario);
+  font-size: 0.78rem;
+  overflow-wrap: anywhere;
+}
+
+.admin-create-product-form__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 0;
+  width: 100%;
+}
+
+.admin-create-product-form__actions button {
+  max-width: 100%;
+  border: 1px solid var(--color-borde);
+  border-radius: 9px;
+  padding: 0.65rem 0.85rem;
+  background: var(--color-superficie);
+  color: var(--color-texto);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.admin-create-product-form__actions button[type='submit'] {
+  border-color: var(--color-acento);
+  background: var(--color-acento);
+  color: #fff;
+}
+
+.admin-create-product-form__actions button:hover:not(:disabled) {
+  filter: brightness(0.96);
+}
+
+.admin-create-product-form button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* Buscador */
+.admin-inventory__search {
+  display: block;
+  min-width: 0;
+  margin-bottom: 0.8rem;
+}
+
+.admin-inventory__search input {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid var(--color-borde);
+  border-radius: 11px;
+  outline: none;
+  background: var(--color-fondo);
+  color: var(--color-texto);
+  font: inherit;
+  font-size: 0.82rem;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.admin-inventory__search input::placeholder {
+  color: var(--color-secundario);
+  opacity: 0.8;
+}
+
+.admin-inventory__search input:focus {
+  border-color: var(--color-acento);
+  box-shadow: 0 0 0 3px var(--color-acento-suave);
+}
+
+/* Filtros por categoría */
+.admin-inventory__categories {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  min-width: 0;
+  margin-bottom: 0.8rem;
+}
+
+.admin-category {
+  max-width: 100%;
+  padding: 0.42rem 0.65rem;
+  border: 1px solid var(--color-borde);
+  border-radius: 999px;
+  background: var(--color-superficie);
+  color: var(--color-secundario);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.7rem;
+  font-weight: 650;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+  transition: background 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+
+.admin-category:hover,
+.admin-category--active {
+  border-color: var(--color-acento);
+  background: var(--color-acento-suave);
+  color: var(--color-texto);
+}
+
+.admin-category:focus-visible {
+  outline: 3px solid var(--color-acento);
+  outline-offset: 2px;
+}
+
+/* Lista desplazable.
+   Cada tarjeta conserva su altura natural: evita que Flexbox la comprima. */
+.admin-product-list {
+  display: flex;
+  flex: 0 1 auto;
+  flex-direction: column;
+  gap: 0.65rem;
+  width: 100%;
+  min-width: 0;
+  min-height: 180px;
+  max-height: calc(100vh - 350px);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0.2rem 0.35rem 0.35rem 0;
+  box-sizing: border-box;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-acento) var(--color-acento-suave);
+}
+
+.admin-product-list::-webkit-scrollbar {
+  width: 7px;
+}
+
+.admin-product-list::-webkit-scrollbar-track {
+  border-radius: 8px;
+  background: var(--color-acento-suave);
+}
+
+.admin-product-list::-webkit-scrollbar-thumb {
+  border-radius: 8px;
+  background: var(--color-acento);
+}
+
+.admin-product-list::-webkit-scrollbar-thumb:hover {
+  background: var(--color-acento-hover);
+}
+
+/* Tarjetas */
+.admin-product-card {
+  display: block;
+  flex: 0 0 auto;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--color-borde);
+  border-radius: 14px;
+  background: var(--color-superficie);
+  color: var(--color-texto);
+  box-sizing: border-box;
+  transition:
+    border-color 160ms ease,
+    background 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.admin-product-card:hover {
+  border-color: var(--color-acento);
+}
+
+.admin-product-card--selected {
+  border-color: var(--color-acento);
+  background: var(--color-acento-suave);
+  box-shadow: var(--color-sombra);
+}
+
+/* Botón que contiene la información principal */
+.admin-product {
+  display: grid;
+  grid-template-columns: 68px minmax(0, 1fr) 18px;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  min-width: 0;
+  min-height: 100px;
+  padding: 0.75rem;
+  border: 0;
+  border-radius: 13px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  box-sizing: border-box;
+}
+
+.admin-product:focus-visible {
+  outline: 3px solid var(--color-acento);
+  outline-offset: -3px;
+}
+
+/* Imagen o marcador de producto */
+.admin-product__image,
+.admin-product__placeholder {
+  display: block;
+  width: 68px;
+  height: 72px;
+  min-width: 0;
+  border-radius: 10px;
+}
+
+.admin-product__image {
+  background: var(--color-etiqueta);
+  object-fit: cover;
+  object-position: center;
+}
+
+.admin-product__placeholder {
+  display: grid;
+  place-items: center;
+  background: var(--color-etiqueta);
+  color: var(--color-acento);
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+/* Nombre, categoría, descripción y stock */
+.admin-product__copy {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.3rem;
+  min-width: 0;
+  width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.admin-product__copy>strong {
+  display: -webkit-box;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--color-texto);
+  font-size: 0.84rem;
+  font-weight: 800;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.admin-product__category {
+  display: block;
+  max-width: 100%;
+  color: var(--color-acento);
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.admin-product__description {
+  display: -webkit-box;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--color-secundario);
+  font-size: 0.71rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.admin-product__copy small {
+  display: block;
+  max-width: 100%;
+  color: var(--color-secundario);
+  font-size: 0.68rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+/* Indicador de expansión */
+.admin-product__chevron {
+  display: grid;
+  align-self: center;
+  width: 18px;
+  height: 24px;
+  place-items: center;
+  color: var(--color-acento);
+  font-size: 1.2rem;
+  line-height: 1;
+  transform: rotate(0deg);
+  transition: transform 180ms ease;
+}
+
+.admin-product__chevron--open {
+  transform: rotate(180deg);
+}
+
+/* Panel de variantes desplegadas */
+.admin-product__variants {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  padding: 0.8rem 0.75rem 0.75rem;
+  border-top: 1px solid var(--color-borde);
+  background: var(--color-fondo);
+  box-sizing: border-box;
+  animation: admin-variants-appear 160ms ease-out;
+}
+
+.admin-product__variants h3 {
+  margin: 0 0 0.6rem;
+  color: var(--color-texto);
+  font-size: 0.76rem;
+  font-weight: 800;
+  line-height: 1.4;
+}
+
+.admin-product-variant {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-width: 0;
+  padding: 0.65rem 0;
+  border-top: 1px solid var(--color-borde);
+}
+
+.admin-product-variant:first-of-type {
+  border-top: 0;
+}
+
+.admin-product-variant__info,
+.admin-product-variant__stock {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.admin-product-variant__info {
+  flex: 1 1 auto;
+}
+
+.admin-product-variant__info strong {
+  color: var(--color-texto);
+  font-size: 0.76rem;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.admin-product-variant__info span,
+.admin-product-variant__stock span {
+  color: var(--color-texto);
+  font-size: 0.75rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.admin-product-variant__stock {
+  flex: 0 0 auto;
+  align-items: flex-end;
+  text-align: right;
+}
+
+.admin-product-variant__stock strong {
+  color: var(--color-texto);
+  font-size: 0.79rem;
+  white-space: nowrap;
+}
+
+.admin-product__no-variants {
+  margin: 0;
+  padding: 0.65rem;
+  border-radius: 9px;
+  background: var(--color-superficie);
+  color: var(--color-secundario);
+  font-size: 0.75rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+/* Estado vacío */
+.admin-inventory__empty {
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 1.2rem 0.8rem;
+  border: 1px dashed var(--color-borde);
+  border-radius: 12px;
+  color: var(--color-secundario);
+  font-size: 0.8rem;
+  line-height: 1.5;
+  text-align: center;
+}
+
+/* Animaciones */
+@keyframes admin-variants-appear {
+  from {
+    opacity: 0;
+    transform: translateY(-3px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+  .admin-product-card,
+  .admin-category,
+  .admin-inventory__search input,
+  .admin-product__chevron {
+    transition: none;
+  }
+
+  .admin-product__variants {
+    animation: none;
+  }
+}
+
+/* Escritorio */
+@media (min-width: 1200px) {
+  .admin-inventory__list {
+    padding: 1.05rem;
+  }
+
+  .admin-product {
+    grid-template-columns: 72px minmax(0, 1fr) 18px;
+    gap: 0.8rem;
+    padding: 0.8rem;
+  }
+
+  .admin-product__image,
+  .admin-product__placeholder {
+    width: 72px;
+    height: 76px;
+  }
+
+  .admin-product-list {
+    max-height: calc(100vh - 340px);
+  }
+}
+
+/* Tabletas */
+@media (max-width: 900px) {
+  .admin-product-list {
+    max-height: 480px;
+    min-height: 160px;
+  }
+}
+
+/* Móviles */
+@media (max-width: 520px) {
+  .admin-inventory__list {
+    padding: 0.75rem;
+    border-radius: 16px;
+  }
+
+  .admin-inventory__list-heading {
+    align-items: flex-start;
+    gap: 0.55rem;
+  }
+
+  .admin-inventory__list-heading h2 {
+    font-size: 1.1rem;
+  }
+
+  .admin-section__description {
+    font-size: 0.73rem;
+  }
+
+  .admin-product-list__count {
+    width: 32px;
+    height: 32px;
+  }
+
+  .admin-create-product-button {
+    padding: 0.55rem;
+    font-size: 0.72rem;
+    white-space: normal;
+  }
+
+  .admin-create-product-form {
+    padding: 0.75rem;
+  }
+
+  .admin-create-product-form__actions {
+    justify-content: space-between;
+  }
+
+  .admin-create-product-form__actions button {
+    flex: 0 1 auto;
+  }
+
+  .admin-inventory__categories {
+    gap: 0.35rem;
+  }
+
+  .admin-category {
+    padding: 0.4rem 0.55rem;
+    font-size: 0.67rem;
+  }
+
+  .admin-product-list {
+    max-height: 430px;
+    min-height: 140px;
+    gap: 0.5rem;
+  }
+
+  .admin-product {
+    grid-template-columns: 58px minmax(0, 1fr) 16px;
+    gap: 0.6rem;
+    min-height: 88px;
+    padding: 0.65rem;
+  }
+
+  .admin-product__image,
+  .admin-product__placeholder {
+    width: 58px;
+    height: 62px;
+    border-radius: 9px;
+  }
+
+  .admin-product__copy>strong {
+    font-size: 0.79rem;
+  }
+
+  .admin-product__category,
+  .admin-product__description {
+    font-size: 0.67rem;
+  }
+
+  .admin-product__copy small {
+    font-size: 0.65rem;
+  }
+
+  .admin-product__variants {
+    padding: 0.7rem 0.6rem 0.6rem;
+  }
+
+  .admin-product-variant {
+    gap: 0.5rem;
+  }
+}
+
+.admin-create-product-form__image {
+  position: relative;
+  display: grid;
+  min-height: 220px;
+  align-items: center;
+  justify-items: center;
+  overflow: hidden;
+  border: 1px dashed var(--color-borde);
+  border-radius: 15px;
+  background: var(--color-etiqueta);
+}
+
+.admin-create-product-form__image-preview {
+  display: block;
+  width: 100%;
+  height: 220px;
+  object-fit: contain;
+}
+
+.admin-create-product-form__image-placeholder {
+  display: grid;
+  gap: 0.5rem;
+  justify-items: center;
+  padding: 2rem 1rem;
+  color: var(--color-texto);
+  text-align: center;
+}
+
+.admin-create-product-form__image-placeholder>span:first-child {
+  font-size: 2rem;
+}
+
+.admin-create-product-form__image-name {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  margin: 0;
+  padding: 0.5rem;
+  overflow-wrap: anywhere;
+  background: var(--color-superficie);
+  font-size: 0.78rem;
+}
+
+.admin-product-detail__image-tool {
+  color: var(--color-texto-negro);
+}
+
+.admin-create-product-form__image .admin-product-detail__image-tools {
+  top: auto;
+  bottom: 0.65rem;
+}
+
+.admin-create-product-form__image .admin-product-detail__image-url {
+  bottom: 3.35rem;
+}
+
+.admin-create-product-form__image.is-dragging {
+  outline: 3px dashed var(--color-acento);
+  outline-offset: -5px;
+}

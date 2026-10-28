@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  frontend:
+    name: Frontend
+    uses: ./.github/workflows/frontend.yml
+
+  backend:
+    name: Backend
+    uses: ./.github/workflows/backend.yml
+
+  test-frontend:
+    name: Pruebas unitarias frontend
+    uses: ./.github/workflows/test-frontend.yml
+
+  test-backend:
+    name: Pruebas unitarias backend
+    uses: ./.github/workflows/test-backend.yml
+
+  integration:
+    name: Integración HTTP
+    uses: ./.github/workflows/test-integration.yml
+
+  docker:
+    name: Docker
+    needs:
+      - frontend
+      - backend
+      - test-frontend
+      - test-backend
+      - integration
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/docker.yml
+
+  sonarcloud:
+    name: SonarCloud
+    needs:
+      - frontend
+      - backend
+      - test-frontend
+      - test-backend
+      - integration
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/sonarcloud.yml
+    secrets:
+      SONAR_TOKEN_DULCERIA: ${{ secrets.SONAR_TOKEN_DULCERIA }}

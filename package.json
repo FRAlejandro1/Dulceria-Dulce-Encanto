@@ -1,0 +1,29 @@
+{
+  "name": "dulceria-dulce-encanto",
+  "version": "1.0.0",
+  "private": true,
+  "engines": {
+    "node": ">=24 <25",
+    "npm": ">=11 <12"
+  },
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev:web": "npm --workspace @dulceria/web run dev",
+    "build:web": "npm --workspace @dulceria/web run build",
+    "lint:web": "npm --workspace @dulceria/web run lint",
+    "dev:api": "npm --workspace @dulceria/api run dev",
+    "build:api": "npm --workspace @dulceria/api run build",
+    "type-check:api": "npm --workspace @dulceria/api run type-check",
+    "lint:api": "npm --workspace @dulceria/api run lint",
+    "test:api": "npm --workspace @dulceria/api run test",
+    "test:coverage:api": "npm --workspace @dulceria/api run test:coverage",
+    "build": "npm run build:web && npm run build:api",
+    "lint": "npm run lint:web && npm run lint:api",
+    "type-check": "npm run type-check:web && npm run type-check:api",
+    "test": "npm run test:api",
+    "test:coverage": "npm run test:coverage:api",
+    "type-check:web": "npm --workspace @dulceria/web run type-check"
+  }
+}

@@ -1,0 +1,157 @@
+﻿@media (max-width: 1000px) {
+  .topbar {
+    flex-wrap: wrap;
+    gap: 14px;
+  }
+
+  .main-nav {
+    order: 3;
+    width: 100%;
+    justify-content: center;
+    gap: 30px;
+  }
+
+  .main-nav__item--active::after {
+    bottom: -6px;
+  }
+
+  .product-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+  }
+}
+
+@media (max-width: 600px) {
+  .topbar {
+    padding: 12px 5%;
+  }
+
+  .brand__mark {
+    width: 39px;
+    height: 39px;
+    border-radius: 13px;
+  }
+
+  .brand__name {
+    font-size: 18px;
+  }
+
+  .brand__tagline {
+    font-size: 13px;
+  }
+
+  .header-actions {
+    gap: 3px;
+  }
+
+  .icon-button {
+    width: 36px;
+    height: 36px;
+  }
+
+  .profile-button {
+    padding: 3px;
+  }
+
+  .profile-button__label {
+    display: none;
+  }
+
+  .main-nav {
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .main-nav__item {
+    font-size: 13px;
+  }
+
+  .catalog {
+    width: 90%;
+    padding: 35px 0 45px;
+  }
+
+  .catalog__intro {
+    align-items: flex-start;
+    margin-bottom: 22px;
+  }
+
+  .catalog__title {
+    font-size: 32px;
+  }
+
+  .catalog__description {
+    font-size: 14px;
+  }
+
+  .catalog-decoration {
+    font-size: 42px;
+  }
+
+  .catalog-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .search-box {
+    box-sizing: border-box;
+    width: 100%;
+  }
+
+  .sort-control {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .sort-select {
+    width: 100%;
+  }
+
+  .category-list {
+    gap: 7px;
+    margin-bottom: 24px;
+  }
+
+  .category-chip {
+    min-height: 36px;
+    padding: 0 12px;
+    font-size: 13px;
+  }
+
+  .product-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  .product-card__body {
+    padding: 15px;
+  }
+
+  .product-card__name {
+    font-size: 19px;
+  }
+
+  .product-card__description {
+    min-height: 0;
+  }
+
+  .products-heading h2 {
+    font-size: 20px;
+  }
+
+  .footer {
+    flex-direction: column;
+  }
+
+  .toast {
+    right: 16px;
+    bottom: 16px;
+  }
+
+  .floating-panel {
+    top: 80px;
+    right: 5%;
+  }
+}

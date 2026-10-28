@@ -1,0 +1,1 @@
+export const DURACION_AVISO_MS = 3000

@@ -1,0 +1,41 @@
+name: Frontend
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Frontend · Lint, tipos y build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar el codigo
+        uses: actions/checkout@v4
+
+      - name: Preparar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci --no-audit --no-fund
+
+      - name: Ejecutar ESLint
+        run: npm run lint:web
+
+      - name: Comprobar tipos TypeScript
+        run: npm run type-check:web
+
+      - name: Compilar frontend
+        run: npm run build:web
+
+      - name: Guardar compilacion frontend
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-dist
+          path: apps/web/dist/
+          if-no-files-found: error
+          retention-days: 7
