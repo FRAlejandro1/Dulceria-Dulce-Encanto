@@ -168,7 +168,7 @@ describe('ProductDetail: edición y validación', () => {
     expect(props.onAjustarStock).not.toHaveBeenCalled()
   })
 
-  it('rechaza un ajuste que dejaría el stock por debajo de las reservas', async () => {
+  it('rechaza un ajuste que dejarÃ­a el stock por debajo de las reservas', async () => {
     const producto = crearProducto()
     producto.variantes = [crearVariante('variante-1', '5.00', 5, 3)]
 
@@ -887,4 +887,143 @@ describe('ProductDetail: edición y validación', () => {
     expect(screen.getByRole('img', { name: 'Unidad' })).toBeTruthy()
   })
 
+  it('ignora el cambio de archivo cuando no se selecciona ningún archivo', () => {
+    const props = crearProps()
+    render(<ProductDetail {...props} />)
+
+    const campoArchivo = document.querySelector('input[type="file"]')
+    expect(campoArchivo).not.toBeNull()
+
+    fireEvent.change(campoArchivo!, { target: { files: [] } })
+
+    expect(props.cargarImagenProducto).not.toHaveBeenCalled()
+    expect(screen.queryByRole('alert')).toBeNull()
+  })
+
+  it('cancela los cambios cuando la descripción original es nula', () => {
+    const producto = crearProducto()
+    producto.descripcion = null as unknown as string
+
+    const props = crearProps(producto)
+    render(<ProductDetail {...props} />)
+
+    fireEvent.change(
+      screen.getByRole('textbox', { name: 'Descripción del producto' }),
+      { target: { value: 'Descripción temporal' } },
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Cancelar cambios' }))
+
+    expect(
+      (screen.getByRole('textbox', {
+        name: 'Descripción del producto',
+      }) as HTMLTextAreaElement).value,
+    ).toBe('')
+  })
+
+  it('cancela los cambios cuando la URL original del producto es nula', () => {
+    const producto = crearProducto()
+    producto.imagenUrl = null as unknown as string
+
+    const props = crearProps(producto)
+    render(<ProductDetail {...props} />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'URL' }))
+    fireEvent.change(
+      screen.getByRole('textbox', { name: 'URL de la imagen del producto' }),
+      { target: { value: 'https://ejemplo.com/temporal.png' } },
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Listo' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Cancelar cambios' }))
+    fireEvent.click(screen.getByRole('button', { name: 'URL' }))
+
+    expect(
+      (screen.getByRole('textbox', {
+        name: 'URL de la imagen del producto',
+      }) as HTMLInputElement).value,
+    ).toBe('')
+  })
+
+  it('muestra el nombre original de la variante si no hay datos editables para la imagen', () => {
+    const producto = crearProducto()
+    producto.variantes[0].imagenUrl = 'https://ejemplo.com/unidad.png'
+
+    const props = crearProps(producto)
+    render(<ProductDetail {...props} />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Unidad' }))
+
+    expect(screen.getByRole('img', { name: 'Unidad' })).toBeTruthy()
+  })
+
+  it('guarda únicamente los cambios de imagen cuando la descripción no cambia', async () => {
+    const props = crearProps()
+    render(<ProductDetail {...props} />)
+
+    fireEvent.change(
+      screen.getByRole('textbox', { name: 'Descripción del producto' }),
+      { target: { value: 'Chocolate oscuro' } },
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'URL' }))
+    fireEvent.change(
+      screen.getByRole('textbox', { name: 'URL de la imagen del producto' }),
+      { target: { value: 'https://ejemplo.com/actualizada.png' } },
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Listo' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }))
+
+    await waitFor(() => {
+      expect(props.onGuardarProducto).toHaveBeenCalledWith('producto-1', {
+        imagenUrl: 'https://ejemplo.com/actualizada.png',
+      })
+    })
+  })
+
+  it('no guarda el producto si se editan campos y se restauran antes de guardar', async () => {
+    const props = crearProps()
+    render(<ProductDetail {...props} />)
+
+    fireEvent.change(
+      screen.getByRole('textbox', { name: 'Descripción del producto' }),
+      { target: { value: 'Descripción temporal' } },
+    )
+    fireEvent.change(
+      screen.getByRole('textbox', { name: 'Descripción del producto' }),
+      { target: { value: 'Chocolate oscuro' } },
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }))
+
+    await waitFor(() => {
+      expect(props.onGuardarProducto).not.toHaveBeenCalled()
+    })
+  })
+
+  it('carga la imagen de una variante seleccionada', async () => {
+    const props = crearProps()
+    render(<ProductDetail {...props} />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Unidad' }))
+
+    const archivo = new File(['imagen de variante'], 'unidad.png', {
+      type: 'image/png',
+    })
+    const campoArchivo = document.querySelector('input[type="file"]')
+
+    expect(campoArchivo).not.toBeNull()
+
+    fireEvent.change(campoArchivo!, {
+      target: { files: [archivo] },
+    })
+
+    await screen.findByText(
+      'Vista previa lista. Pulsa Guardar cambios para subirla.',
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }))
+
+    await waitFor(() => {
+      expect(props.cargarImagenVariante).toHaveBeenCalledWith(
+        'variante-1',
+        archivo,
+      )
+    })
+  })
 })

@@ -13,6 +13,7 @@ import AppFooter from './modules/app/components/AppFooter'
 import { useAppSession } from './modules/app/hooks/useAppSession'
 import { useProductActions } from './modules/app/hooks/useProductActions'
 import { useFavorites } from './modules/favorites/hooks/useFavorites'
+import { useCreateOrder } from './modules/orders/hooks/useCreateOrder'
 import Toast from './modules/notifications/Toast'
 
 const Auth = lazy(() => import('./modules/auth/Auth'))
@@ -95,7 +96,22 @@ function App() {
     agregarVariante,
     cambiarCantidad,
     eliminarVariante,
+    vaciarCarrito,
   } = useCart(productos)
+
+  const manejarPedidoCreado = useCallback(() => {
+    cerrarCarrito()
+    reintentarCarga()
+  }, [cerrarCarrito, reintentarCarga])
+
+  const { procesandoPedido, manejarCreacionPedido } = useCreateOrder({
+    usuario,
+    lineas,
+    vaciarCarrito,
+    abrirAutenticacion,
+    notificar: setAviso,
+    alCrearPedido: manejarPedidoCreado,
+  })
 
   const {
     obtenerVarianteSeleccionada,
@@ -128,10 +144,6 @@ function App() {
     restablecerVistaAdministrativa()
     volverAlInicio()
   }, [restablecerVistaAdministrativa, volverAlInicio])
-
-  const finalizarPedidoNoDisponible = useCallback(() => {
-    setAviso('La finalización de pedidos todavía no está disponible.')
-  }, [])
 
   const manejarAgregarAlCarrito = useCallback(
     (producto: Producto) => {
@@ -213,7 +225,11 @@ function App() {
           onCerrar={cerrarCarrito}
           onCambiarCantidad={manejarCambioCantidad}
           onEliminar={eliminarVariante}
-          onFinalizarPedido={finalizarPedidoNoDisponible}
+          onFinalizarPedido={() =>
+            setAviso('Completa el formulario para confirmar el pedido.')
+          }
+          onCrearPedido={manejarCreacionPedido}
+          procesandoPedido={procesandoPedido}
         />
       ) : (
         <CatalogView

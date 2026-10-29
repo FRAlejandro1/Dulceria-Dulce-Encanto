@@ -36,8 +36,11 @@ async function auditarPedido(
 
 export async function crearPedido(usuarioId: string, datos: CrearPedido) {
   return ejecutarTransaccion(async (conexion) => {
-    const variantesIds = datos.items.map((item) => item.varianteId);
-    const variantes = await obtenerVariantesParaPedido(conexion, variantesIds);
+    const variantesIds = datos.items.map((item) => String(item.varianteId));
+    const variantes = await obtenerVariantesParaPedido(
+      conexion,
+      variantesIds,
+    );
 
     if (variantes.length !== variantesIds.length) {
       throw new ErrorAplicacion(
@@ -47,13 +50,13 @@ export async function crearPedido(usuarioId: string, datos: CrearPedido) {
     }
 
     const porId = new Map(
-      variantes.map((variante) => [variante.varianteId, variante]),
+      variantes.map((variante) => [String(variante.varianteId), variante]),
     );
 
     let subtotalCentavos = 0;
 
     for (const item of datos.items) {
-      const variante = porId.get(item.varianteId);
+      const variante = porId.get(String(item.varianteId));
 
       if (!variante || !variante.activa) {
         throw new ErrorAplicacion(
@@ -66,7 +69,10 @@ export async function crearPedido(usuarioId: string, datos: CrearPedido) {
       const disponible = variante.stockFisico - variante.stockReservado;
 
       if (!Number.isSafeInteger(precioCentavos) || precioCentavos < 0) {
-        throw new ErrorAplicacion(409, 'El precio de una variante no es válido.');
+        throw new ErrorAplicacion(
+          409,
+          'El precio de una variante no es válido.',
+        );
       }
 
       if (disponible < item.cantidad) {
@@ -79,7 +85,10 @@ export async function crearPedido(usuarioId: string, datos: CrearPedido) {
       subtotalCentavos += precioCentavos * item.cantidad;
 
       if (!Number.isSafeInteger(subtotalCentavos)) {
-        throw new ErrorAplicacion(400, 'El total del pedido supera el límite permitido.');
+        throw new ErrorAplicacion(
+          400,
+          'El total del pedido supera el límite permitido.',
+        );
       }
     }
 
@@ -95,7 +104,15 @@ export async function crearPedido(usuarioId: string, datos: CrearPedido) {
     });
 
     for (const item of datos.items) {
-      const variante = porId.get(item.varianteId)!;
+      const variante = porId.get(String(item.varianteId));
+
+      if (!variante) {
+        throw new ErrorAplicacion(
+          409,
+          'Una de las variantes seleccionadas no está disponible.',
+        );
+      }
+
       const precio = Math.round(Number(variante.precio) * 100) / 100;
 
       await crearDetallePedido(conexion, {

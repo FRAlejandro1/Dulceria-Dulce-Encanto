@@ -1,0 +1,193 @@
+﻿.checkout-form {
+  width: min(100%, 680px);
+  box-sizing: border-box;
+  margin: 0 auto;
+  padding: clamp(20px, 4vw, 34px);
+  border: 1px solid var(--color-borde);
+  border-radius: 20px;
+  background: var(--color-superficie);
+  box-shadow: var(--color-sombra);
+  color: var(--color-texto);
+}
+
+.checkout-form h2 {
+  margin: 0;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(24px, 4vw, 30px);
+  font-weight: 500;
+  line-height: 1.25;
+}
+
+.checkout-form > p {
+  margin: 10px 0 25px;
+  color: var(--color-secundario);
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.checkout-form form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.checkout-form fieldset {
+  display: grid;
+  gap: 12px;
+  margin: 0 0 12px;
+  padding: 18px;
+  border: 1px solid var(--color-borde);
+  border-radius: 13px;
+}
+
+.checkout-form legend {
+  padding: 0 7px;
+  color: var(--color-texto);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.checkout-form fieldset label {
+  display: flex;
+  min-height: 28px;
+  align-items: center;
+  gap: 10px;
+  color: var(--color-texto);
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.checkout-form input[type='radio'] {
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+  margin: 0;
+  accent-color: var(--color-acento);
+  cursor: pointer;
+}
+
+.checkout-form label[for='checkout-notas'] {
+  margin-top: 4px;
+  color: var(--color-texto);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.checkout-form textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 110px;
+  padding: 12px 14px;
+  resize: vertical;
+  border: 1px solid var(--color-borde);
+  border-radius: 11px;
+  background: var(--color-fondo);
+  color: var(--color-texto);
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.6;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.checkout-form textarea::placeholder {
+  color: var(--color-secundario);
+  opacity: 0.85;
+}
+
+.checkout-form textarea:focus-visible {
+  border-color: var(--color-acento);
+  outline: 2px solid var(--color-acento);
+  outline-offset: 2px;
+}
+
+.checkout-form form > p {
+  margin: -3px 0 12px;
+  color: var(--color-secundario);
+  font-size: 12px;
+  text-align: right;
+}
+
+.checkout-form__actions {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.checkout-form__actions button {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 18px;
+  border: 1px solid var(--color-borde);
+  border-radius: 11px;
+  background: var(--color-superficie);
+  color: var(--color-texto);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: background-color 150ms ease, border-color 150ms ease,
+    transform 150ms ease;
+}
+
+.checkout-form__actions button:last-child {
+  border-color: var(--color-acento);
+  background: var(--color-acento);
+  color: #fff;
+}
+
+.checkout-form__actions button:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.checkout-form__actions button:first-child:hover:not(:disabled) {
+  border-color: var(--color-acento);
+  background: var(--color-acento-suave);
+}
+
+.checkout-form__actions button:last-child:hover:not(:disabled) {
+  border-color: var(--color-acento-hover);
+  background: var(--color-acento-hover);
+}
+
+.checkout-form__actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.app--dark .checkout-form__actions button:last-child {
+  border-color: var(--color-acento-hover);
+  background: var(--color-acento-hover);
+  color: var(--color-texto-negro);
+}
+
+.app--dark .checkout-form__actions button:last-child:hover:not(:disabled) {
+  background: #f7b4bf;
+}
+
+@media (max-width: 600px) {
+  .checkout-form {
+    padding: 20px 16px;
+    border-radius: 15px;
+  }
+
+  .checkout-form > p {
+    margin-bottom: 20px;
+  }
+
+  .checkout-form fieldset {
+    padding: 14px;
+  }
+
+  .checkout-form__actions {
+    flex-direction: column-reverse;
+    gap: 9px;
+  }
+
+  .checkout-form__actions button {
+    width: 100%;
+    min-height: 46px;
+  }
+}

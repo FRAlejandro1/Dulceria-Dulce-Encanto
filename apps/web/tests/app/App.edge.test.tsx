@@ -123,14 +123,14 @@ describe('Casos límite del catálogo', () => {
     })
 
     expect(tarjeta.getByText('$1.00')).toBeTruthy()
-    expect(tarjeta.getByText('2 disponibles')).toBeTruthy()
+    expect(tarjeta.getByText('2 disponibles para agregar')).toBeTruthy()
 
     fireEvent.change(selector, {
       target: { value: 'variante-paquete' },
     })
 
     expect(tarjeta.getByText('$3.50')).toBeTruthy()
-    expect(tarjeta.getByText('5 disponibles')).toBeTruthy()
+    expect(tarjeta.getByText('5 disponibles para agregar')).toBeTruthy()
 
     fireEvent.click(obtenerBotonAgregar(tarjeta))
 
@@ -283,7 +283,7 @@ describe('Casos límite del catálogo', () => {
     ).toBeTruthy()
   })
 
-  it('informa que la finalización del pedido todavía no está disponible', async () => {
+  it('solicita iniciar sesión para finalizar el pedido', async () => {
     render(<App />)
 
     const titulo = await esperarProducto()
@@ -297,14 +297,14 @@ describe('Casos límite del catálogo', () => {
       }),
     )
 
+    fireEvent.click(screen.getByRole('button', { name: /finalizar pedido/i }))
+
     fireEvent.click(
-      screen.getByRole('button', { name: 'Finalizar pedido' }),
+      await screen.findByRole('button', { name: /confirmar pedido/i }),
     )
 
     expect(
-      await screen.findByText(
-        'La finalización de pedidos todavía no está disponible.',
-      ),
+      await screen.findByText('Inicia sesión para realizar un pedido.'),
     ).toBeTruthy()
   })
 
@@ -889,7 +889,7 @@ describe('Validación de adiciones al carrito', () => {
     )
   })
 
-  it('rechaza variantes sin existencias', () => {
+  it('rechaza una variante sin existencias', () => {
     expect(
       validarAdicionCarrito(
         { ...variante, stockDisponible: 0 },
@@ -898,13 +898,13 @@ describe('Validación de adiciones al carrito', () => {
     ).toBe('Esta variante no tiene existencias disponibles.')
   })
 
-  it('rechaza cantidades que alcanzan el límite de stock', () => {
+  it('rechaza agregar cuando se alcanza el stock', () => {
     expect(validarAdicionCarrito(variante, 2)).toBe(
       'No puedes agregar más unidades que las disponibles en stock.',
     )
   })
 
-  it('permite agregar unidades mientras haya stock', () => {
+  it('permite agregar cuando queda stock', () => {
     expect(validarAdicionCarrito(variante, 1)).toBeNull()
   })
 })

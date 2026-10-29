@@ -1,16 +1,24 @@
+﻿import { useState } from 'react'
 import type {
   LineaCarrito,
   PropiedadesPanelCarrito,
 } from '../types/cart.types'
+import type { MetodoPagoPedido } from '../../orders/types/orders.types'
 import CartEmpty from './CartEmpty/CartEmpty'
 import CartItem from './CartItem/CartItem'
 import CartSummary from './CartSummary/CartSummary'
+import CheckoutForm from './CheckoutForm/CheckoutForm'
 import './CartPanel.css'
 
 type CartPanelProps = PropiedadesPanelCarrito & {
   lineas?: LineaCarrito[]
   cantidadCarrito?: number
   subtotalCarrito?: number
+  procesandoPedido?: boolean
+  onCrearPedido?: (datos: {
+    metodoPago: MetodoPagoPedido
+    notas?: string
+  }) => void
 }
 
 function CartPanel({
@@ -23,7 +31,11 @@ function CartPanel({
   onCambiarCantidad,
   onEliminar,
   onFinalizarPedido,
+  procesandoPedido = false,
+  onCrearPedido,
 }: CartPanelProps) {
+  const [checkoutAbierto, setCheckoutAbierto] = useState(false)
+
   const lineas =
     lineasRecibidas ??
     productos.flatMap((producto) =>
@@ -56,6 +68,15 @@ function CartPanel({
     subtotalRecibido ??
     lineas.reduce((total, linea) => total + linea.subtotal, 0)
 
+  function manejarFinalizarPedido() {
+    if (onCrearPedido) {
+      setCheckoutAbierto(true)
+      return
+    }
+
+    onFinalizarPedido()
+  }
+
   return (
     <section
       className="simple-page cart-page"
@@ -84,6 +105,12 @@ function CartPanel({
 
       {lineas.length === 0 ? (
         <CartEmpty onCerrar={onCerrar} />
+      ) : checkoutAbierto && onCrearPedido ? (
+        <CheckoutForm
+          procesando={procesandoPedido}
+          onConfirmar={onCrearPedido}
+          onCancelar={() => setCheckoutAbierto(false)}
+        />
       ) : (
         <div className="cart-layout">
           <section
@@ -111,7 +138,7 @@ function CartPanel({
           <CartSummary
             cantidad={cantidadCarrito}
             subtotal={subtotalCarrito}
-            onFinalizarPedido={onFinalizarPedido}
+            onFinalizarPedido={manejarFinalizarPedido}
           />
         </div>
       )}
