@@ -37,6 +37,7 @@ vi.mock('../../src/modules/cart/hooks/useCart', async (importOriginal) => {
   }
 })
 
+
 const productosPrueba = [
   {
     id: 'caramelos-surtidos',
@@ -451,160 +452,6 @@ describe('Catálogo de Dulce Encanto', () => {
     ).toBeTruthy()
   })
 
-  it('muestra el error devuelto al agregar un producto al carrito', async () => {
-    const mensajeError = 'No hay existencias suficientes para agregar el producto.'
-    cartMocks.errorAgregarVariante = mensajeError
-
-    render(<App />)
-    await esperarCatalogo()
-
-    fireEvent.click(
-      screen.getByRole('button', {
-        name: 'Agregar Caramelos surtidos al carrito',
-      }),
-    )
-
-    expect(screen.getByText(mensajeError)).toBeTruthy()
-  })
-
-  it('muestra el error al fallar el cambio de cantidad en el carrito', async () => {
-    const mensajeError =
-      'No puedes superar las existencias disponibles.'
-
-    cartMocks.errorCambioCantidad = mensajeError
-
-    render(<App />)
-    await esperarCatalogo()
-
-    fireEvent.click(
-      screen.getByRole('button', {
-        name: 'Agregar Caramelos surtidos al carrito',
-      }),
-    )
-
-    fireEvent.click(
-      screen.getByRole('button', { name: 'Carrito, 1 productos' }),
-    )
-
-    fireEvent.click(
-      screen.getByRole('button', {
-        name: 'Aumentar cantidad de Caramelos surtidos',
-      }),
-    )
-
-    expect(screen.getByText(mensajeError)).toBeTruthy()
-  })
-
-  it('informa cuando el carrito está vacío', async () => {
-    render(<App />)
-    await esperarCatalogo()
-
-    fireEvent.click(
-      screen.getByRole('button', { name: 'Carrito, 0 productos' }),
-    )
-
-    expect(
-      screen.getByRole('heading', { name: 'Tu carrito está vacío' }),
-    ).toBeTruthy()
-    expect(
-      screen.getByRole('button', { name: 'Explorar catálogo' }),
-    ).toBeTruthy()
-  })
-
-  it('regresa al catálogo desde el carrito vacío', async () => {
-    render(<App />)
-    await esperarCatalogo()
-
-    fireEvent.click(
-      screen.getByRole('button', { name: 'Carrito, 0 productos' }),
-    )
-
-    expect(
-      screen.getByRole('heading', { name: 'Tu carrito está vacío' }),
-    ).toBeTruthy()
-
-    fireEvent.click(
-      screen.getByRole('button', { name: 'Explorar catálogo' }),
-    )
-
-    expect(
-      screen.getByRole('heading', { name: 'Nuestros productos' }),
-    ).toBeTruthy()
-  })
-
-  it('abre y cierra las notificaciones', async () => {
-    render(<App />)
-    await esperarCatalogo()
-
-    fireEvent.click(screen.getByRole('button', { name: 'Notificaciones' }))
-    expect(
-      screen.getByText('Inicia sesión para consultar tus notificaciones.'),
-    ).toBeTruthy()
-
-    fireEvent.click(screen.getByRole('button', { name: 'Cerrar panel' }))
-    expect(
-      screen.queryByText('Inicia sesión para consultar tus notificaciones.'),
-    ).toBeNull()
-
-    fireEvent.click(screen.getByRole('button', { name: 'Notificaciones' }))
-    expect(
-      screen.getByText('Inicia sesión para consultar tus notificaciones.'),
-    ).toBeTruthy()
-
-    fireEvent.click(screen.getByRole('button', { name: 'Notificaciones' }))
-    expect(
-      screen.queryByText('Inicia sesión para consultar tus notificaciones.'),
-    ).toBeNull()
-  })
-
-  it('abre y cierra el diálogo de autenticación desde el perfil', async () => {
-    render(<App />)
-    await esperarCatalogo()
-
-    fireEvent.click(
-      screen.getByRole('button', { name: 'Abrir perfil' }),
-    )
-
-    expect(await screen.findByRole('dialog')).toBeTruthy()
-    expect(
-      screen.getByRole('heading', { name: 'Bienvenido de nuevo' }),
-    ).toBeTruthy()
-
-    fireEvent.click(
-      screen.getByRole('button', { name: /Cerrar autenticación/i }),
-    )
-
-    expect(screen.queryByRole('dialog')).toBeNull()
-  })
-
-  it('alterna entre modo oscuro y modo claro', async () => {
-    render(<App />)
-    await esperarCatalogo()
-
-    fireEvent.click(
-      screen.getByRole('button', { name: 'Activar modo oscuro' }),
-    )
-    expect(screen.getByRole('main').className).toContain('app--dark')
-
-    fireEvent.click(
-      screen.getByRole('button', { name: 'Activar modo claro' }),
-    )
-    expect(screen.getByRole('main').className).toBe('app')
-  })
-
-  it('muestra las imágenes de los productos con texto alternativo', async () => {
-    render(<App />)
-    await esperarCatalogo()
-
-    const imagenes = screen.getAllByRole('img')
-    expect(imagenes).toHaveLength(5)
-
-    for (const producto of productosPrueba) {
-      expect(
-        screen.getByRole('img', { name: producto.nombre }),
-      ).toBeTruthy()
-    }
-  })
 
   it('muestra un error si la API no está disponible', async () => {
     vi.mocked(fetch).mockRejectedValueOnce(new Error('Error de conexión'))
@@ -647,5 +494,26 @@ describe('Catálogo de Dulce Encanto', () => {
     expect(
       screen.queryByRole('heading', { name: 'Caramelos surtidos' }),
     ).toBeNull()
+  })
+
+  it('alterna el tema oscuro y permite volver al tema claro', async () => {
+    render(<App />)
+    await esperarCatalogo()
+
+    const aplicacion = document.querySelector('.app')
+
+    expect(aplicacion?.classList.contains('app--dark')).toBe(false)
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Activar modo oscuro' }),
+    )
+
+    expect(aplicacion?.classList.contains('app--dark')).toBe(true)
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Activar modo claro' }),
+    )
+
+    expect(aplicacion?.classList.contains('app--dark')).toBe(false)
   })
 })

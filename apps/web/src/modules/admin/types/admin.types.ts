@@ -1,4 +1,4 @@
-import type {
+﻿import type {
   ActualizarProductoAdmin,
   ActualizarVarianteAdmin,
   AjustarStockAdmin,
@@ -9,7 +9,7 @@ import type {
 } from './inventory.types'
 
 export type PropiedadesPanelAdmin = {
-  alVolverATienda: () => void
+  vistaAdmin: 'inventario' | 'pedidos'
 }
 
 export type PropiedadesResumenInventario = {

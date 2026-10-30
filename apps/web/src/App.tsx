@@ -1,4 +1,4 @@
-﻿import { lazy, Suspense, useCallback, useState } from 'react'
+import { lazy, Suspense, useCallback, useState } from 'react'
 import './App.css'
 import type { Producto } from './types/catalogo.types'
 import { useCatalog } from './modules/catalog/hooks/useCatalog'
@@ -29,6 +29,7 @@ function App() {
     Record<string, string>
   >({})
   const [vistaCarrito, setVistaCarrito] = useState(false)
+  const [vistaAdmin, setVistaAdmin] = useState<'inventario' | 'pedidos'>('inventario')
   const [temaOscuro, setTemaOscuro] = useState(false)
   const [panel, setPanel] = useState<
     'ninguno' | 'notificaciones' | 'perfil'
@@ -191,6 +192,8 @@ function App() {
         onAlternarPanel={manejarAlternarPanel}
         onAbrirAutenticacion={abrirAutenticacion}
         onVolverATienda={volverATienda}
+        vistaAdmin={vistaAdmin}
+        onCambiarVistaAdmin={setVistaAdmin}
       />
 
       {!vistaAdministracion && (
@@ -239,7 +242,7 @@ function App() {
             </div>
           }
         >
-          <AdminPanel alVolverATienda={volverATienda} />
+          <AdminPanel vistaAdmin={vistaAdmin} />
         </Suspense>
       ) : vistaCarrito ? (
         <CartPanel

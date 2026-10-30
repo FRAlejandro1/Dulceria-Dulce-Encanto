@@ -1,4 +1,4 @@
-﻿import express from 'express';
+import express from 'express';
 import request from 'supertest';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -47,9 +47,10 @@ function crearAplicacion() {
     res: express.Response,
     _next: express.NextFunction,
   ) => {
+    void _next
     res.status(error.status ?? 500).json({
       mensaje: error.mensajePublico ?? 'Error interno',
-    });
+    })
   });
 
   return app;

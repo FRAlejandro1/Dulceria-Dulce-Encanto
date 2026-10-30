@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import type { UsuarioAutenticado } from '../../auth/types/auth.types'
 import {
   listarNotificaciones,
@@ -8,7 +8,7 @@ import type { NotificacionPedido } from '../services/order-notifications.service
 
 export function useOrderNotifications(usuario: UsuarioAutenticado | null) {
   const [notificaciones, setNotificaciones] = useState<NotificacionPedido[]>([])
-  const [cargandoNotificaciones, setCargandoNotificaciones] = useState(false)
+  const [cargandoNotificaciones, setCargandoNotificaciones] = useState(() => Boolean(usuario))
   const [errorNotificaciones, setErrorNotificaciones] = useState('')
 
   const cargarNotificaciones = useCallback(async () => {
@@ -37,7 +37,7 @@ export function useOrderNotifications(usuario: UsuarioAutenticado | null) {
   }, [usuario])
 
   useEffect(() => {
-    void cargarNotificaciones()
+    void Promise.resolve().then(cargarNotificaciones)
   }, [cargarNotificaciones])
 
   const marcarComoLeida = useCallback(async (id: string) => {

@@ -1,4 +1,4 @@
-﻿import type { UsuarioAutenticado } from '../../auth/types/auth.types'
+import type { UsuarioAutenticado } from '../../auth/types/auth.types'
 
 interface AppHeaderProps {
   cantidadCarrito: number
@@ -17,6 +17,8 @@ interface AppHeaderProps {
   onAlternarPanel: (panel: 'notificaciones' | 'perfil') => void
   onAbrirAutenticacion: () => void
   onVolverATienda: () => void
+  vistaAdmin: 'inventario' | 'pedidos'
+  onCambiarVistaAdmin: (vista: 'inventario' | 'pedidos') => void
 }
 
 export default function AppHeader({
@@ -36,12 +38,14 @@ export default function AppHeader({
   onAlternarPanel,
   onAbrirAutenticacion,
   onVolverATienda,
+  vistaAdmin,
+  onCambiarVistaAdmin,
 }: AppHeaderProps) {
   return (
     <header className="topbar">
       <a
         className="brand"
-        href="#inicio"
+        href="/#inicio"
         aria-label="Dulce Encanto, inicio"
         onClick={(evento) => {
           evento.preventDefault()
@@ -61,20 +65,35 @@ export default function AppHeader({
       </a>
 
       {vistaAdministracion && usuario?.rol === 'ADMIN' ? (
-        <nav className="main-nav" aria-label="Navegación administrativa">
+        <nav className="main-nav admin-header-nav" aria-label="Navegación administrativa">
           <button
             type="button"
-            className="main-nav__item"
-            onClick={onVolverATienda}
+            className={vistaAdmin === 'inventario' ? 'main-nav__item main-nav__item--active' : 'main-nav__item'}
+            aria-current={vistaAdmin === 'inventario' ? 'page' : undefined}
+            onClick={() => onCambiarVistaAdmin('inventario')}
           >
-            Volver a la tienda
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z" />
+            </svg>
+            Inventario
+          </button>
+          <button
+            type="button"
+            className={vistaAdmin === 'pedidos' ? 'main-nav__item main-nav__item--active' : 'main-nav__item'}
+            aria-current={vistaAdmin === 'pedidos' ? 'page' : undefined}
+            onClick={() => onCambiarVistaAdmin('pedidos')}
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M7 3h10l3 3v15H4V3zM8 10h8M8 14h8M8 18h5M16 3v4h4" />
+            </svg>
+            Pedidos
           </button>
         </nav>
       ) : (
         <nav className="main-nav" aria-label="Navegación principal">
           <a
             className="main-nav__item"
-            href="#inicio"
+            href="/#inicio"
             onClick={(evento) => {
               evento.preventDefault()
               onVolverAlInicio()

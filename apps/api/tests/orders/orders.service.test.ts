@@ -1,4 +1,4 @@
-﻿import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const {
   registrarAuditoria,
@@ -41,7 +41,6 @@ vi.mock('../../src/modules/orders/orders.repository.js', () => ({
 }));
 
 import { crearPedido } from '../../src/modules/orders/orders.service.js';
-import { ErrorAplicacion } from '../../src/shared/http/app-error.js';
 
 const conexion = {} as never;
 
@@ -213,7 +212,7 @@ describe('crearPedido', () => {
   });
 
   it('permite crear un pedido sin notas', async () => {
-    const { notas: _notas, ...datosSinNotas } = datos;
+    const datosSinNotas = { ...datos, notas: undefined };
 
     await crearPedido('20', datosSinNotas);
 

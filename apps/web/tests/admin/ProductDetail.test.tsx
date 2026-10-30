@@ -187,6 +187,26 @@ describe('ProductDetail: edición y validación', () => {
     expect(props.onAjustarStock).not.toHaveBeenCalled()
   })
 
+  it('guarda los cambios de variante sin ajustar el stock cuando la cantidad es cero', async () => {
+    const props = crearProps()
+    render(<ProductDetail {...props} />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Unidad' }))
+    fireEvent.change(
+      screen.getByRole('textbox', { name: 'Nombre de la variante seleccionada' }),
+      { target: { value: 'Caja' } },
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }))
+
+    await waitFor(() => {
+      expect(props.onGuardarVariante).toHaveBeenCalledWith('variante-1', {
+        nombre: 'Caja',
+      })
+    })
+
+    expect(props.onAjustarStock).not.toHaveBeenCalled()
+  })
   it('guarda los cambios de variante y el ajuste de stock', async () => {
     const props = crearProps()
     render(<ProductDetail {...props} />)

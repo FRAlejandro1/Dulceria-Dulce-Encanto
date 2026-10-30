@@ -1,4 +1,4 @@
-﻿import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import AppHeader from '../../src/modules/app/components/AppHeader'
 import type { UsuarioAutenticado } from '../../src/modules/auth/types/auth.types'
@@ -26,6 +26,7 @@ function renderizarCabecera(
   opciones: {
     usuario?: UsuarioAutenticado | null
     vistaAdministracion?: boolean
+    vistaAdmin?: 'inventario' | 'pedidos'
     temaOscuro?: boolean
     verFavoritos?: boolean
     panel?: 'ninguno' | 'notificaciones' | 'perfil'
@@ -42,6 +43,7 @@ function renderizarCabecera(
     onAlternarPanel: vi.fn(),
     onAbrirAutenticacion: vi.fn(),
     onVolverATienda: vi.fn(),
+    onCambiarVistaAdmin: vi.fn(),
   }
 
   render(
@@ -54,6 +56,7 @@ function renderizarCabecera(
       vistaAdministracion={opciones.vistaAdministracion ?? false}
       verFavoritos={opciones.verFavoritos ?? false}
       panel={opciones.panel ?? 'ninguno'}
+      vistaAdmin={opciones.vistaAdmin ?? 'inventario'}
       {...callbacks}
     />,
   )
@@ -62,6 +65,21 @@ function renderizarCabecera(
 }
 
 describe('AppHeader', () => {
+  it('activa el modo oscuro desde la cabecera', () => {
+    const callbacks = renderizarCabecera({ temaOscuro: false })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Activar modo oscuro' }))
+
+    expect(callbacks.onAlternarTema).toHaveBeenCalledOnce()
+  })
+
+  it('permite volver al modo claro desde la cabecera', () => {
+    const callbacks = renderizarCabecera({ temaOscuro: true })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Activar modo claro' }))
+
+    expect(callbacks.onAlternarTema).toHaveBeenCalledOnce()
+  })
   it('muestra la navegación administrativa para un administrador', () => {
     const callbacks = renderizarCabecera({
       usuario: usuarioAdmin,
@@ -75,12 +93,32 @@ describe('AppHeader', () => {
     expect(screen.queryByRole('button', { name: 'Notificaciones' })).toBeNull()
     expect(screen.queryByRole('button', { name: 'Carrito, 0 productos' })).toBeNull()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Volver a la tienda' }))
+    fireEvent.click(screen.getByRole('link', { name: 'Dulce Encanto, inicio' }))
     expect(callbacks.onVolverATienda).toHaveBeenCalledOnce()
 
     fireEvent.click(screen.getByRole('link', { name: 'Dulce Encanto, inicio' }))
     expect(callbacks.onVolverATienda).toHaveBeenCalledTimes(2)
     expect(callbacks.onVolverAlInicio).not.toHaveBeenCalled()
+  })
+
+  it('permite cambiar entre inventario y pedidos en la navegaci?n administrativa', () => {
+    const callbacks = renderizarCabecera({
+      usuario: usuarioAdmin,
+      vistaAdministracion: true,
+      vistaAdmin: 'inventario',
+    })
+
+    const inventario = screen.getByRole('button', { name: 'Inventario' })
+    const pedidos = screen.getByRole('button', { name: 'Pedidos' })
+
+    expect(inventario.getAttribute('aria-current')).toBe('page')
+    expect(pedidos.getAttribute('aria-current')).toBeNull()
+
+    fireEvent.click(pedidos)
+    fireEvent.click(inventario)
+
+    expect(callbacks.onCambiarVistaAdmin).toHaveBeenNthCalledWith(1, 'pedidos')
+    expect(callbacks.onCambiarVistaAdmin).toHaveBeenNthCalledWith(2, 'inventario')
   })
 
   it('muestra navegación normal si la vista administrativa no corresponde a un administrador', () => {
@@ -150,6 +188,21 @@ describe('AppHeader', () => {
     expect(callbacks.onVolverATienda).not.toHaveBeenCalled()
   })
 
+  it('marca pedidos como vista activa cuando está seleccionada', () => {
+    renderizarCabecera({
+      usuario: usuarioAdmin,
+      vistaAdministracion: true,
+      vistaAdmin: 'pedidos',
+    })
+
+    expect(
+      screen.getByRole('button', { name: 'Pedidos' }).getAttribute('aria-current'),
+    ).toBe('page')
+
+    expect(
+      screen.getByRole('button', { name: 'Inventario' }).getAttribute('aria-current'),
+    ).toBeNull()
+  })
   it('muestra la cantidad de notificaciones pendientes', () => {
     renderizarCabecera({ cantidadNotificacionesPendientes: 3 })
 

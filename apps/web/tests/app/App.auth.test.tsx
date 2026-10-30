@@ -1,4 +1,4 @@
-﻿import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import {
     afterEach,
     beforeEach,
@@ -42,6 +42,10 @@ function configurarFetchAutenticacion(
 
             if (ruta === '/api/v1/catalog/products') {
                 return respuesta({ productos: [] })
+            }
+
+            if (ruta === '/api/v1/favorites') {
+                return respuesta({ favoritos: [] })
             }
 
             if (ruta === '/api/v1/auth/csrf') {
@@ -256,7 +260,11 @@ describe('Integración de autenticación en App', () => {
                     return respuesta({ productos: [producto] })
                 }
 
-                if (ruta === '/api/v1/auth/csrf') {
+                if (ruta === '/api/v1/favorites') {
+                return respuesta({ favoritos: [] })
+            }
+
+            if (ruta === '/api/v1/auth/csrf') {
                     return respuesta({ csrfToken: 'token-csrf-prueba' })
                 }
 
@@ -375,7 +383,11 @@ describe('Integración de autenticación en App', () => {
                     return respuesta({ productos: [] })
                 }
 
-                if (ruta === '/api/v1/auth/csrf') {
+                if (ruta === '/api/v1/favorites') {
+                return respuesta({ favoritos: [] })
+            }
+
+            if (ruta === '/api/v1/auth/csrf') {
                     return respuesta({ csrfToken: 'token-csrf-prueba' })
                 }
 
@@ -408,7 +420,7 @@ describe('Integración de autenticación en App', () => {
         ).toBeTruthy()
 
         expect(
-            await screen.findByRole('heading', { name: 'Inventario' }),
+            await screen.findByRole('button', { name: 'Inventario' }),
         ).toBeTruthy()
 
         await waitFor(() => {
@@ -423,7 +435,7 @@ describe('Integración de autenticación en App', () => {
         })
 
         fireEvent.click(
-            screen.getByRole('button', { name: 'Volver a la tienda' }),
+            screen.getByRole('link', { name: 'Dulce Encanto, inicio' }),
         )
 
         expect(
@@ -445,7 +457,11 @@ describe('Integración de autenticación en App', () => {
                     return respuesta({ productos: [] })
                 }
 
-                if (ruta === '/api/v1/auth/csrf') {
+                if (ruta === '/api/v1/favorites') {
+                return respuesta({ favoritos: [] })
+            }
+
+            if (ruta === '/api/v1/auth/csrf') {
                     return respuesta({ csrfToken: 'token-csrf-prueba' })
                 }
 
@@ -516,7 +532,11 @@ describe('Integración de autenticación en App', () => {
                     return respuesta({ productos: [] })
                 }
 
-                if (ruta === '/api/v1/auth/csrf') {
+                if (ruta === '/api/v1/favorites') {
+                return respuesta({ favoritos: [] })
+            }
+
+            if (ruta === '/api/v1/auth/csrf') {
                     return respuesta({ csrfToken: 'token-csrf-prueba' })
                 }
 

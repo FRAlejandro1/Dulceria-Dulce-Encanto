@@ -54,7 +54,6 @@ app.use((
   error: Error,
   _req: express.Request,
   res: express.Response,
-  _next: express.NextFunction,
 ) => res.status(500).json({ error: error.message }));
 
 describe('orders-admin.routes', () => {

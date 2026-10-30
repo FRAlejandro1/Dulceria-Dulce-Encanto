@@ -1,4 +1,4 @@
-.app {
+﻿.app {
   --color-fondo: #fbf8f5;
   --color-superficie: #ffffff;
   --color-texto: #3e302c;
@@ -10,6 +10,24 @@
   --color-borde: #e5d8d2;
   --color-etiqueta: #f4e8dc;
   --color-sombra: 0 8px 28px rgb(76 48 40 / 5%);
+  --estado-confirmado-texto: #216b42;
+  --estado-confirmado-fondo: #e7f4eb;
+  --estado-confirmado-borde: #b8dfc5;
+  --estado-envio-texto: #245c91;
+  --estado-envio-fondo: #e8f2fc;
+  --estado-envio-borde: #c3d9ef;
+  --estado-pendiente-texto: #80520b;
+  --estado-pendiente-fondo: #fff4d9;
+  --estado-pendiente-borde: #ead39b;
+  --estado-rechazado-texto: #a52d35;
+  --estado-rechazado-fondo: #fcebed;
+  --estado-rechazado-borde: #efc2c6;
+  --estado-cancelado-texto: #5f6268;
+  --estado-cancelado-fondo: #eff0f2;
+  --estado-cancelado-borde: #d3d5d9;
+  --estado-expirado-texto: #7042a0;
+  --estado-expirado-fondo: #f3ecfb;
+  --estado-expirado-borde: #d8c7ef;
   --font-size-eyebrow: 0.875rem;
   min-height: 100vh;
   background: var(--color-fondo);
@@ -29,9 +47,27 @@
   --color-borde: #594842;
   --color-etiqueta: #45362d;
   --color-sombra: 0 8px 28px rgb(0 0 0 / 15%);
+  --estado-confirmado-texto: #8fe0aa;
+  --estado-confirmado-fondo: #263f30;
+  --estado-confirmado-borde: #426c50;
+  --estado-envio-texto: #9bcaff;
+  --estado-envio-fondo: #26394d;
+  --estado-envio-borde: #3d5e7d;
+  --estado-pendiente-texto: #f4cc78;
+  --estado-pendiente-fondo: #493a25;
+  --estado-pendiente-borde: #796039;
+  --estado-rechazado-texto: #ff9da4;
+  --estado-rechazado-fondo: #4a292d;
+  --estado-rechazado-borde: #79464b;
+  --estado-cancelado-texto: #c5c9d0;
+  --estado-cancelado-fondo: #383a40;
+  --estado-cancelado-borde: #555963;
+  --estado-expirado-texto: #d2b0ff;
+  --estado-expirado-fondo: #3e304f;
+  --estado-expirado-borde: #624c7b;
 }
 
-/* Los botones con texto blanco usan un rosa más oscuro en el tema oscuro. */
+/* Los botones con texto blanco usan un rosa mÃ¡s oscuro en el tema oscuro. */
 .app--dark .icon-button__badge,
 .app--dark .category-chip--active,
 .app--dark .product-card__add,
@@ -47,4 +83,8 @@
 .app--dark .floating-panel__action:hover {
   background: #6f293a;
   color: #ffffff;
+}
+
+.app--dark .brand__mark {
+  color: var(--color-texto);
 }

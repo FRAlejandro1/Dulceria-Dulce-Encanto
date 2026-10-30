@@ -1,4 +1,4 @@
-﻿import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
   registrarAuditoria: vi.fn(),
@@ -33,7 +33,6 @@ import {
   consultarPedidosAdmin,
   consultarVentasMensualesAdmin,
 } from '../../src/modules/orders/orders-admin.service.js';
-import { ErrorAplicacion } from '../../src/shared/http/app-error.js';
 
 const conexion = {} as never;
 
