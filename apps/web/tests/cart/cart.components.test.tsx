@@ -1,4 +1,4 @@
-﻿import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { Producto, Variante } from '../../src/types/catalogo.types'
 import type { LineaCarrito } from '../../src/modules/cart/types/cart.types'
@@ -23,7 +23,7 @@ const variante: Variante = {
 const producto: Producto = {
     id: 'producto-1',
     nombre: 'Producto de prueba',
-    descripcion: 'DescripciÃ³n de prueba',
+    descripcion: 'Descripción de prueba',
     imagenUrl: null,
     categoria: {
         nombre: 'Pruebas',
@@ -332,37 +332,81 @@ describe('CartSummary', () => {
 })
 
 describe('CartPanel: ramas adicionales', () => {
-  const propiedadesAdicionales = {
-    productos: [producto],
-    carrito: {} as Record<string, number>,
-    onCerrar: vi.fn(),
-    onCambiarCantidad: vi.fn(),
-    onEliminar: vi.fn(),
-    onFinalizarPedido: vi.fn(),
-  }
+    const propiedadesAdicionales = {
+        productos: [producto],
+        carrito: {} as Record<string, number>,
+        onCerrar: vi.fn(),
+        onCambiarCantidad: vi.fn(),
+        onEliminar: vi.fn(),
+        onFinalizarPedido: vi.fn(),
+    }
 
-  it('ignora variantes cuya cantidad no existe en el carrito', () => {
-    render(<CartPanel {...propiedadesAdicionales} />)
+    it('ignora variantes cuya cantidad no existe en el carrito', () => {
+        render(<CartPanel {...propiedadesAdicionales} />)
 
-    expect(
-      screen.getByRole('heading', { name: /Tu carrito está vacío/i }),
-    ).toBeTruthy()
-    expect(
-      screen.queryByRole('heading', { name: 'Resumen del pedido' }),
-    ).toBeNull()
-  })
+        expect(
+            screen.getByRole('heading', { name: /Tu carrito está vacío/i }),
+        ).toBeTruthy()
+        expect(
+            screen.queryByRole('heading', { name: 'Resumen del pedido' }),
+        ).toBeNull()
+    })
 
-  it('utiliza las líneas, cantidad y subtotal recibidos', () => {
-    render(
-      <CartPanel
-        {...propiedadesAdicionales}
-        lineas={[linea]}
-        cantidadCarrito={7}
-        subtotalCarrito={17.5}
-      />,
-    )
+    it('utiliza las líneas, cantidad y subtotal recibidos', () => {
+        render(
+            <CartPanel
+                {...propiedadesAdicionales}
+                lineas={[linea]}
+                cantidadCarrito={7}
+                subtotalCarrito={17.5}
+            />,
+        )
 
-    expect(screen.getAllByText('$17,50')).toHaveLength(2)
-    expect(screen.getByText(/7\s+unidades/)).toBeTruthy()
-  })
+        expect(screen.getAllByText('$17,50')).toHaveLength(2)
+        expect(screen.getByText(/7\s+unidades/)).toBeTruthy()
+    })
+
+    it('finaliza directamente cuando no se proporciona onCrearPedido', () => {
+        const onFinalizarPedido = vi.fn()
+
+        render(
+            <CartPanel
+                {...propiedadesAdicionales}
+                carrito={{ 'variante-1': 1 }}
+                onFinalizarPedido={onFinalizarPedido}
+            />,
+        )
+
+        fireEvent.click(
+            screen.getByRole('button', { name: /Finalizar pedido/i }),
+        )
+
+        expect(onFinalizarPedido).toHaveBeenCalledOnce()
+    })
+
+    it('abre y permite volver al carrito desde el formulario de compra', () => {
+        const onCrearPedido = vi.fn()
+
+        render(
+            <CartPanel
+                {...propiedadesAdicionales}
+                carrito={{ 'variante-1': 1 }}
+                onCrearPedido={onCrearPedido}
+            />,
+        )
+
+        fireEvent.click(
+            screen.getByRole('button', { name: /Finalizar pedido/i }),
+        )
+
+        fireEvent.click(
+            screen.getByRole('button', { name: /Volver al carrito/i }),
+        )
+
+        expect(
+            screen.getByRole('heading', { name: 'Resumen del pedido' }),
+        ).toBeTruthy()
+
+        expect(onCrearPedido).not.toHaveBeenCalled()
+    })
 })

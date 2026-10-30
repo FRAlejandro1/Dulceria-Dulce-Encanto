@@ -1,4 +1,3 @@
-﻿
 import { lazy, Suspense, useCallback, useState } from 'react'
 import './App.css'
 import type { Producto } from './types/catalogo.types'
@@ -13,6 +12,9 @@ import FloatingPanel from './modules/app/components/FloatingPanel'
 import AppFooter from './modules/app/components/AppFooter'
 import { useAppSession } from './modules/app/hooks/useAppSession'
 import { useProductActions } from './modules/app/hooks/useProductActions'
+import { useFavorites } from './modules/favorites/hooks/useFavorites'
+import { useCreateOrder } from './modules/orders/hooks/useCreateOrder'
+import { useOrderNotifications } from './modules/orders/hooks/useOrderNotifications'
 import Toast from './modules/notifications/Toast'
 
 const Auth = lazy(() => import('./modules/auth/Auth'))
@@ -27,6 +29,7 @@ function App() {
     Record<string, string>
   >({})
   const [vistaCarrito, setVistaCarrito] = useState(false)
+  const [vistaAdmin, setVistaAdmin] = useState<'inventario' | 'pedidos'>('inventario')
   const [temaOscuro, setTemaOscuro] = useState(false)
   const [panel, setPanel] = useState<
     'ninguno' | 'notificaciones' | 'perfil'
@@ -50,20 +53,35 @@ function App() {
   })
 
   const {
+    notificaciones,
+    pendientes,
+    cargandoNotificaciones,
+    errorNotificaciones,
+    cargarNotificaciones,
+    marcarComoLeida,
+  } = useOrderNotifications(usuario)
+
+  const { favoritos, alternarFavorito } = useFavorites(
+    usuario,
+    setAviso,
+  )
+
+  const {
     busqueda,
     setBusqueda,
     categoria,
     setCategoria,
     orden,
     setOrden,
-    favoritos,
     verFavoritos,
     setVerFavoritos,
     categorias,
     productosVisibles,
-    alternarFavorito,
     restablecerFiltros: restablecerFiltrosCatalogo,
-  } = useCatalogFilters(productos)
+  } = useCatalogFilters(productos, {
+    favoritos,
+    alternarFavorito,
+  })
 
   const {
     restablecerFiltros,
@@ -89,7 +107,23 @@ function App() {
     agregarVariante,
     cambiarCantidad,
     eliminarVariante,
+    vaciarCarrito,
   } = useCart(productos)
+
+  const manejarPedidoCreado = useCallback(() => {
+    cerrarCarrito()
+    reintentarCarga()
+    void cargarNotificaciones()
+  }, [cerrarCarrito, reintentarCarga, cargarNotificaciones])
+
+  const { procesandoPedido, manejarCreacionPedido } = useCreateOrder({
+    usuario,
+    lineas,
+    vaciarCarrito,
+    abrirAutenticacion,
+    notificar: setAviso,
+    alCrearPedido: manejarPedidoCreado,
+  })
 
   const {
     obtenerVarianteSeleccionada,
@@ -114,18 +148,18 @@ function App() {
       setPanel((actual) =>
         actual === nuevoPanel ? 'ninguno' : nuevoPanel,
       )
+
+      if (nuevoPanel === 'notificaciones') {
+        void cargarNotificaciones()
+      }
     },
-    [],
+    [cargarNotificaciones],
   )
 
   const volverATienda = useCallback(() => {
     restablecerVistaAdministrativa()
     volverAlInicio()
   }, [restablecerVistaAdministrativa, volverAlInicio])
-
-  const finalizarPedidoNoDisponible = useCallback(() => {
-    setAviso('La finalización de pedidos todavía no está disponible.')
-  }, [])
 
   const manejarAgregarAlCarrito = useCallback(
     (producto: Producto) => {
@@ -142,6 +176,7 @@ function App() {
       <AppHeader
         cantidadCarrito={cantidadCarrito}
         cantidadFavoritos={favoritos.length}
+        cantidadNotificacionesPendientes={pendientes}
         temaOscuro={temaOscuro}
         usuario={usuario}
         vistaAdministracion={vistaAdministracion}
@@ -157,15 +192,27 @@ function App() {
         onAlternarPanel={manejarAlternarPanel}
         onAbrirAutenticacion={abrirAutenticacion}
         onVolverATienda={volverATienda}
+        vistaAdmin={vistaAdmin}
+        onCambiarVistaAdmin={setVistaAdmin}
       />
 
       {!vistaAdministracion && (
         <FloatingPanel
           panel={panel}
           usuario={usuario}
+          notificaciones={notificaciones}
+          pendientes={pendientes}
+          cargandoNotificaciones={cargandoNotificaciones}
+          errorNotificaciones={errorNotificaciones}
           onCerrar={() => setPanel('ninguno')}
           onAbrirAutenticacion={abrirAutenticacion}
           onAbrirAdministracion={abrirAdministracion}
+          onMarcarNotificacionLeida={(id) => {
+            void marcarComoLeida(id)
+          }}
+          onReintentarNotificaciones={() => {
+            void cargarNotificaciones()
+          }}
         />
       )}
 
@@ -195,7 +242,7 @@ function App() {
             </div>
           }
         >
-          <AdminPanel alVolverATienda={volverATienda} />
+          <AdminPanel vistaAdmin={vistaAdmin} />
         </Suspense>
       ) : vistaCarrito ? (
         <CartPanel
@@ -207,7 +254,11 @@ function App() {
           onCerrar={cerrarCarrito}
           onCambiarCantidad={manejarCambioCantidad}
           onEliminar={eliminarVariante}
-          onFinalizarPedido={finalizarPedidoNoDisponible}
+          onFinalizarPedido={() =>
+            setAviso('Completa el formulario para confirmar el pedido.')
+          }
+          onCrearPedido={manejarCreacionPedido}
+          procesandoPedido={procesandoPedido}
         />
       ) : (
         <CatalogView

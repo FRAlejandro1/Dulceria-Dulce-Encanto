@@ -1,4 +1,4 @@
-import { defineConfig } from 'vitest/config';
+﻿import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   test: {
@@ -26,6 +26,25 @@ export default defineConfig({
         'src/modules/users/users.routes.ts',
         'src/modules/users/users.schemas.ts',
         'src/modules/users/users.service.ts',
+        'src/modules/admin/admin-images.repository.ts',
+        'src/modules/admin/admin-images.service.ts',
+        'src/modules/admin/storage/image-upload.errors.ts',
+        'src/modules/admin/storage/image-upload.middleware.ts',
+        'src/modules/admin/storage/local-image-storage.ts',
+        'src/modules/favorites/favorites.repository.ts',
+        'src/modules/favorites/favorites.routes.ts',
+        'src/modules/orders/orders.repository.ts',
+        'src/modules/orders/orders.routes.ts',
+        'src/modules/orders/orders-admin.routes.ts',
+        'src/modules/orders/orders-notifications.routes.ts',
+        'src/modules/orders/orders-admin.repository.ts',
+        'src/modules/orders/orders-admin.service.ts',
+        'src/modules/orders/orders-history.repository.ts',
+        'src/modules/orders/orders-history.service.ts',
+        'src/modules/orders/orders-notifications-query.repository.ts',
+        'src/modules/orders/orders-notifications.repository.ts',
+        'src/modules/orders/orders.schemas.ts',
+        'src/modules/orders/orders.service.ts',
         'src/shared/database/transaction.ts',
         'src/shared/http/app-error.ts',
         'src/shared/http/error-handler.ts',

@@ -3,6 +3,7 @@ import type { UsuarioAutenticado } from '../../auth/types/auth.types'
 interface AppHeaderProps {
   cantidadCarrito: number
   cantidadFavoritos: number
+  cantidadNotificacionesPendientes: number
   temaOscuro: boolean
   usuario: UsuarioAutenticado | null
   vistaAdministracion: boolean
@@ -16,11 +17,14 @@ interface AppHeaderProps {
   onAlternarPanel: (panel: 'notificaciones' | 'perfil') => void
   onAbrirAutenticacion: () => void
   onVolverATienda: () => void
+  vistaAdmin: 'inventario' | 'pedidos'
+  onCambiarVistaAdmin: (vista: 'inventario' | 'pedidos') => void
 }
 
 export default function AppHeader({
   cantidadCarrito,
   cantidadFavoritos,
+  cantidadNotificacionesPendientes,
   temaOscuro,
   usuario,
   vistaAdministracion,
@@ -34,12 +38,14 @@ export default function AppHeader({
   onAlternarPanel,
   onAbrirAutenticacion,
   onVolverATienda,
+  vistaAdmin,
+  onCambiarVistaAdmin,
 }: AppHeaderProps) {
   return (
     <header className="topbar">
       <a
         className="brand"
-        href="#inicio"
+        href="/#inicio"
         aria-label="Dulce Encanto, inicio"
         onClick={(evento) => {
           evento.preventDefault()
@@ -54,33 +60,40 @@ export default function AppHeader({
         <span className="brand__mark">DE</span>
         <span className="brand__copy">
           <strong className="brand__name">Dulce Encanto</strong>
-          <small className="brand__tagline">
-            Momentos que endulzan
-          </small>
+          <small className="brand__tagline">Momentos que endulzan</small>
         </span>
       </a>
 
       {vistaAdministracion && usuario?.rol === 'ADMIN' ? (
-        <nav
-          className="main-nav"
-          aria-label="Navegación administrativa"
-        >
+        <nav className="main-nav admin-header-nav" aria-label="Navegación administrativa">
           <button
             type="button"
-            className="main-nav__item"
-            onClick={onVolverATienda}
+            className={vistaAdmin === 'inventario' ? 'main-nav__item main-nav__item--active' : 'main-nav__item'}
+            aria-current={vistaAdmin === 'inventario' ? 'page' : undefined}
+            onClick={() => onCambiarVistaAdmin('inventario')}
           >
-            Volver a la tienda
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z" />
+            </svg>
+            Inventario
+          </button>
+          <button
+            type="button"
+            className={vistaAdmin === 'pedidos' ? 'main-nav__item main-nav__item--active' : 'main-nav__item'}
+            aria-current={vistaAdmin === 'pedidos' ? 'page' : undefined}
+            onClick={() => onCambiarVistaAdmin('pedidos')}
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M7 3h10l3 3v15H4V3zM8 10h8M8 14h8M8 18h5M16 3v4h4" />
+            </svg>
+            Pedidos
           </button>
         </nav>
       ) : (
-        <nav
-          className="main-nav"
-          aria-label="Navegación principal"
-        >
+        <nav className="main-nav" aria-label="Navegación principal">
           <a
             className="main-nav__item"
-            href="#inicio"
+            href="/#inicio"
             onClick={(evento) => {
               evento.preventDefault()
               onVolverAlInicio()
@@ -121,8 +134,7 @@ export default function AppHeader({
             onClick={onAlternarFavoritos}
             aria-pressed={verFavoritos}
           >
-            Favoritos{' '}
-            <span className="nav-count">{cantidadFavoritos}</span>
+            Favoritos <span className="nav-count">{cantidadFavoritos}</span>
           </button>
         </nav>
       )}
@@ -133,14 +145,23 @@ export default function AppHeader({
             <button
               type="button"
               className="icon-button"
-              aria-label="Notificaciones"
+              aria-label={
+                cantidadNotificacionesPendientes > 0
+                  ? `Notificaciones, ${cantidadNotificacionesPendientes} sin leer`
+                  : 'Notificaciones'
+              }
               aria-expanded={panel === 'notificaciones'}
               onClick={() => onAlternarPanel('notificaciones')}
             >
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4" />
               </svg>
-              <span className="notification-dot" />
+
+              {cantidadNotificacionesPendientes > 0 && (
+                <span className="icon-button__badge">
+                  {cantidadNotificacionesPendientes}
+                </span>
+              )}
             </button>
 
             <button
@@ -155,9 +176,7 @@ export default function AppHeader({
               </svg>
 
               {cantidadCarrito > 0 && (
-                <span className="icon-button__badge">
-                  {cantidadCarrito}
-                </span>
+                <span className="icon-button__badge">{cantidadCarrito}</span>
               )}
             </button>
           </>
@@ -166,11 +185,7 @@ export default function AppHeader({
         <button
           type="button"
           className="icon-button theme-button"
-          aria-label={
-            temaOscuro
-              ? 'Activar modo claro'
-              : 'Activar modo oscuro'
-          }
+          aria-label={temaOscuro ? 'Activar modo claro' : 'Activar modo oscuro'}
           onClick={onAlternarTema}
         >
           {temaOscuro ? '☀' : '☾'}

@@ -24,7 +24,13 @@ function ProductCard({
   onAgregar,
 }: ProductCardProps) {
   const agotado = variante.stockDisponible <= 0
-  const stockCompleto = cantidadEnCarrito >= variante.stockDisponible
+
+  const stockRestante = Math.max(
+    0,
+    variante.stockDisponible - cantidadEnCarrito,
+  )
+
+  const stockCompleto = stockRestante === 0
   const noDisponible = agotado || stockCompleto
 
   const imagenProducto =
@@ -118,8 +124,13 @@ function ProductCard({
                 ? 'product-card__stock product-card__stock--empty'
                 : 'product-card__stock'
             }
+            aria-live="polite"
           >
-            {agotado ? 'Agotado' : `${variante.stockDisponible} disponibles`}
+            {agotado
+              ? 'Agotado'
+              : stockCompleto
+                ? 'Todo el stock está en tu carrito'
+                : `${stockRestante} disponibles para agregar`}
           </p>
         </div>
 

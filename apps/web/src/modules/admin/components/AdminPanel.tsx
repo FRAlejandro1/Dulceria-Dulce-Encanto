@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useState } from 'react'
 import type {
   ActualizarProductoAdmin,
   ActualizarVarianteAdmin,
@@ -26,6 +26,7 @@ import {
 import InventorySummary from './InventorySummary/InventorySummary'
 import ProductDetail from './ProductDetail/ProductDetail'
 import ProductList from './ProductList/ProductList'
+const OrdersAdmin = lazy(() => import('./OrdersAdmin/OrdersAdmin'))
 import { useInventory } from '../hooks/useInventory'
 import type {
   CategoriaEditableAdmin,
@@ -33,10 +34,7 @@ import type {
 } from '../types/admin.types'
 import './AdminPanel.css'
 
-function AdminPanel(props: PropiedadesPanelAdmin) {
-  // La navegación de vuelta a la tienda está en el logotipo global.
-  void props.alVolverATienda
-
+function AdminPanel({ vistaAdmin }: PropiedadesPanelAdmin) {
   const [productosAdmin, setProductosAdmin] = useState<ProductoAdmin[]>([])
   const [categoriasAdmin, setCategoriasAdmin] = useState<CategoriaAdmin[]>([])
   const [cargando, setCargando] = useState(true)
@@ -214,68 +212,68 @@ function AdminPanel(props: PropiedadesPanelAdmin) {
 
   return (
     <main className="admin-panel">
-      <h1>Inventario</h1>
-      {cargando && (
-        <p className="admin-panel__status" role="status">
-          Cargando inventario administrativo...
-        </p>
-      )}
-
-      {!cargando && errorCarga && (
-        <div className="admin-panel__error" role="alert">
-          <p>No se pudo actualizar el inventario: {errorCarga}</p>
-          <button type="button" onClick={() => void cargarProductos()}>
-            Reintentar
-          </button>
-        </div>
-      )}
-
-      {!cargando && !errorCarga && (
+      {vistaAdmin === 'pedidos' ? (
+        <Suspense fallback={<p className="admin-panel__status" role="status">Cargando módulo de pedidos...</p>}>
+          <OrdersAdmin />
+        </Suspense>
+      ) : (
         <>
-          <InventorySummary
-            cantidadProductos={inventario.cantidadProductos}
-            cantidadVariantes={inventario.cantidadVariantes}
-            existenciasDisponibles={inventario.existenciasDisponibles}
-          />
+          {cargando && (
+            <p className="admin-panel__status" role="status">
+              Cargando inventario administrativo...
+            </p>
+          )}
 
-          <section
-            className="admin-inventory"
-            aria-label="Gestión del inventario"
-          >
-            <ProductList
-              productos={inventario.productosFiltrados}
-              productoSeleccionadoId={
-                inventario.productoSeleccionado?.id ?? ''
-              }
-              busqueda={inventario.busqueda}
-              categoriaSeleccionada={inventario.categoriaSeleccionada}
-              categorias={inventario.categorias}
-              onCambiarBusqueda={inventario.cambiarBusqueda}
-              onCambiarCategoria={inventario.cambiarCategoria}
-              onSeleccionarProducto={inventario.seleccionarProducto}
-              categoriasDisponibles={categoriasAdmin.filter(
-                (categoria) => categoria.activa,
-              )}
-              onCrearProducto={crearProducto}
-              onCargarImagenProducto={cargarImagenProducto}
-            />
+          {!cargando && errorCarga && (
+            <div className="admin-panel__error" role="alert">
+              <p>No se pudo actualizar el inventario: {errorCarga}</p>
+              <button type="button" onClick={() => void cargarProductos()}>
+                Reintentar
+              </button>
+            </div>
+          )}
 
-            <ProductDetail
-              producto={inventario.productoSeleccionado}
-              categorias={categoriasEditables}
-              onGuardarProducto={guardarCambiosProducto}
-              onGuardarVariante={guardarCambiosVariante}
-              onAjustarStock={guardarAjusteStock}
-              onCrearVariante={crearVariante}
-              cargarImagenProducto={cargarImagenProducto}
-              eliminarImagenProducto={eliminarImagenProducto}
-              cargarImagenVariante={cargarImagenVariante}
-              eliminarImagenVariante={eliminarImagenVariante}
-              obtenerImagenesVariante={obtenerImagenesVariante}
-              cargarImagenAdicionalVariante={cargarImagenAdicionalVariante}
-              eliminarImagenAdicionalVariante={eliminarImagenAdicionalVariante}
-            />
-          </section>
+          {!cargando && !errorCarga && (
+            <>
+              <InventorySummary
+                cantidadProductos={inventario.cantidadProductos}
+                cantidadVariantes={inventario.cantidadVariantes}
+                existenciasDisponibles={inventario.existenciasDisponibles}
+              />
+
+              <section className="admin-inventory" aria-label="GestiÃ³n del inventario">
+                <ProductList
+                  productos={inventario.productosFiltrados}
+                  productoSeleccionadoId={inventario.productoSeleccionado?.id ?? ''}
+                  busqueda={inventario.busqueda}
+                  categoriaSeleccionada={inventario.categoriaSeleccionada}
+                  categorias={inventario.categorias}
+                  onCambiarBusqueda={inventario.cambiarBusqueda}
+                  onCambiarCategoria={inventario.cambiarCategoria}
+                  onSeleccionarProducto={inventario.seleccionarProducto}
+                  categoriasDisponibles={categoriasAdmin.filter((categoria) => categoria.activa)}
+                  onCrearProducto={crearProducto}
+                  onCargarImagenProducto={cargarImagenProducto}
+                />
+
+                <ProductDetail
+                  producto={inventario.productoSeleccionado}
+                  categorias={categoriasEditables}
+                  onGuardarProducto={guardarCambiosProducto}
+                  onGuardarVariante={guardarCambiosVariante}
+                  onAjustarStock={guardarAjusteStock}
+                  onCrearVariante={crearVariante}
+                  cargarImagenProducto={cargarImagenProducto}
+                  eliminarImagenProducto={eliminarImagenProducto}
+                  cargarImagenVariante={cargarImagenVariante}
+                  eliminarImagenVariante={eliminarImagenVariante}
+                  obtenerImagenesVariante={obtenerImagenesVariante}
+                  cargarImagenAdicionalVariante={cargarImagenAdicionalVariante}
+                  eliminarImagenAdicionalVariante={eliminarImagenAdicionalVariante}
+                />
+              </section>
+            </>
+          )}
         </>
       )}
     </main>

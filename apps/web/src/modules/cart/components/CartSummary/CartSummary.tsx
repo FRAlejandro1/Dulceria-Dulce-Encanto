@@ -1,4 +1,4 @@
-import './CartSummary.css'
+﻿import './CartSummary.css'
 
 type CartSummaryProps = {
   cantidad: number
@@ -56,7 +56,7 @@ function CartSummary({
       </button>
 
       <p className="cart-summary__secure-note">
-        La finalización de pedidos aún no está habilitada.
+        Revisa los detalles y selecciona tu método de pago para continuar.
       </p>
     </aside>
   )

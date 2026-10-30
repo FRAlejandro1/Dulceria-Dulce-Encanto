@@ -2,11 +2,18 @@ import { useMemo, useState } from 'react'
 import type { Producto } from '../../../types/catalogo.types'
 import { obtenerPrecioMinimo } from '../utils/product.utils'
 
-export function useCatalogFilters(productos: Producto[]) {
+interface FavoritosCatalogo {
+  favoritos: string[]
+  alternarFavorito: (id: string) => void | Promise<void>
+}
+
+export function useCatalogFilters(
+  productos: Producto[],
+  { favoritos, alternarFavorito }: FavoritosCatalogo,
+) {
   const [busqueda, setBusqueda] = useState('')
   const [categoria, setCategoria] = useState('Todos')
   const [orden, setOrden] = useState('destacados')
-  const [favoritos, setFavoritos] = useState<string[]>([])
   const [verFavoritos, setVerFavoritos] = useState(false)
 
   const categorias = useMemo(
@@ -56,14 +63,6 @@ export function useCatalogFilters(productos: Producto[]) {
 
     return lista
   }, [busqueda, categoria, favoritos, orden, productos, verFavoritos])
-
-  function alternarFavorito(id: string) {
-    setFavoritos((actuales) =>
-      actuales.includes(id)
-        ? actuales.filter((favorito) => favorito !== id)
-        : [...actuales, id],
-    )
-  }
 
   function restablecerFiltros() {
     setBusqueda('')

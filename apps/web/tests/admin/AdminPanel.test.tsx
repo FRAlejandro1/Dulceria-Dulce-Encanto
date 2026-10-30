@@ -1,4 +1,3 @@
-
 import {
   cleanup,
   fireEvent,
@@ -203,7 +202,7 @@ describe('InventorySummary', () => {
 })
 
 describe('ProductDetail', () => {
-  it('muestra el estado vacÃ­o cuando no hay producto seleccionado', () => {
+  it('muestra el estado vacÃƒÂ­o cuando no hay producto seleccionado', () => {
     render(<ProductDetail {...propiedadesDetalle} />)
 
     expect(screen.getByText('Selecciona un producto')).toBeTruthy()
@@ -325,7 +324,7 @@ describe('ProductDetail', () => {
     const articulo = textoSku.closest('article')
 
     if (!articulo) {
-      throw new Error('No se encontró la variante ch-1')
+      throw new Error('No se encontrÃ³ la variante ch-1')
     }
 
     fireEvent.click(
@@ -354,7 +353,7 @@ describe('ProductDetail', () => {
     const articulo = textoSku.closest('article')
 
     if (!articulo) {
-      throw new Error('No se encontró la variante ch-1')
+      throw new Error('No se encontrÃ³ la variante ch-1')
     }
 
     fireEvent.click(
@@ -393,7 +392,7 @@ describe('ProductList', () => {
     onCargarImagenProducto: vi.fn().mockResolvedValue('/imagen.png'),
   }
 
-  it('muestra productos, stock, categorÃ­as e imagen alternativa', () => {
+  it('muestra productos, stock, categorÃƒÂ­as e imagen alternativa', () => {
     render(<ProductList {...propiedades} />)
 
     expect(
@@ -414,7 +413,7 @@ describe('ProductList', () => {
     expect(screen.getByText(/8 disponibles/)).toBeTruthy()
   })
 
-  it('notifica la búsqueda, el cambio de categorÃ­a y la selección', () => {
+  it('notifica la bÃºsqueda, el cambio de categorÃƒÂ­a y la selecciÃ³n', () => {
     render(<ProductList {...propiedades} />)
 
     fireEvent.change(
@@ -430,7 +429,7 @@ describe('ProductList', () => {
     expect(propiedades.onSeleccionarProducto).toHaveBeenCalledWith('2')
   })
 
-  it('muestra el mensaje cuando la lista está vacÃ­a', () => {
+  it('muestra el mensaje cuando la lista estÃ¡ vacÃƒÂ­a', () => {
     render(<ProductList {...propiedades} productos={[]} />)
 
     expect(screen.getByRole('status').textContent).toBe(
@@ -440,10 +439,66 @@ describe('ProductList', () => {
 })
 
 describe('AdminPanel', () => {
-  it('carga productos administrativos e integra métricas y filtros', async () => {
+  it('evita actualizar el estado cuando falla la carga despu?s del desmontaje', async () => {
+    let rechazarProductos!: (error: Error) => void
+
+    vi.mocked(obtenerProductosAdmin).mockReturnValueOnce(
+      new Promise((_, reject) => {
+        rechazarProductos = reject
+      }),
+    )
+
+    const { unmount } = render(
+      <AdminPanel vistaAdmin="inventario" />,
+    )
+
+    unmount()
+    rechazarProductos(new Error('Error despu?s del desmontaje'))
+
+    await Promise.resolve()
+    await Promise.resolve()
+  })
+
+  it('renderiza la vista administrativa de pedidos', () => {
+    render(<AdminPanel vistaAdmin="pedidos" />)
+
+    expect(document.querySelector('.admin-panel')).toBeTruthy()
+    expect(obtenerProductosAdmin).toHaveBeenCalledOnce()
+  })
+
+  it('evita actualizar el estado cuando se desmonta durante la carga inicial', async () => {
+    let resolverProductos!: (valor: ProductoAdmin[]) => void
+    let resolverCategorias!: (valor: typeof categoriasDisponibles) => void
+
+    vi.mocked(obtenerProductosAdmin).mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolverProductos = resolve
+      }),
+    )
+
+    vi.mocked(obtenerCategoriasAdmin).mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolverCategorias = resolve
+      }),
+    )
+
+    const { unmount } = render(
+      <AdminPanel vistaAdmin="inventario" />,
+    )
+
+    unmount()
+
+    resolverProductos(productos)
+    resolverCategorias(categoriasDisponibles)
+
+    await Promise.resolve()
+    await Promise.resolve()
+  })
+
+  it('carga productos administrativos e integra mÃ©tricas y filtros', async () => {
     vi.mocked(obtenerProductosAdmin).mockResolvedValue(productos)
 
-    render(<AdminPanel alVolverATienda={vi.fn()} />)
+    render(<AdminPanel vistaAdmin="inventario" />)
 
     expect(
       screen.getByText('Cargando inventario administrativo...'),
@@ -452,8 +507,6 @@ describe('AdminPanel', () => {
     expect(
       await screen.findByRole('heading', { name: 'Chocolate' }),
     ).toBeTruthy()
-    expect(screen.getByRole('heading', { name: 'Inventario' })).toBeTruthy()
-
     const resumen = screen.getByLabelText('Resumen del inventario')
 
     expect(
@@ -480,10 +533,10 @@ describe('AdminPanel', () => {
     expect(obtenerCategoriasAdmin).toHaveBeenCalledOnce()
   })
 
-  it('muestra el estado vacÃ­o cuando la API no devuelve productos', async () => {
+  it('muestra el estado vacÃƒÂ­o cuando la API no devuelve productos', async () => {
     vi.mocked(obtenerProductosAdmin).mockResolvedValue([])
 
-    render(<AdminPanel alVolverATienda={vi.fn()} />)
+    render(<AdminPanel vistaAdmin="inventario" />)
 
     expect(
       await screen.findByText('No se encontraron productos con esos filtros.'),
@@ -498,13 +551,13 @@ describe('AdminPanel', () => {
 
   it('muestra un error y permite reintentar si falla la carga', async () => {
     vi.mocked(obtenerProductosAdmin)
-      .mockRejectedValueOnce(new Error('Error de conexión'))
+      .mockRejectedValueOnce(new Error('Error de conexiÃ³n'))
       .mockResolvedValueOnce(productos)
 
-    render(<AdminPanel alVolverATienda={vi.fn()} />)
+    render(<AdminPanel vistaAdmin="inventario" />)
 
     expect(await screen.findByRole('alert')).toBeTruthy()
-    expect(screen.getByText(/Error de conexión/)).toBeTruthy()
+    expect(screen.getByText(/Error de conexiÃ³n/)).toBeTruthy()
 
     fireEvent.click(screen.getByRole('button', { name: 'Reintentar' }))
 
@@ -514,12 +567,109 @@ describe('AdminPanel', () => {
     expect(obtenerProductosAdmin).toHaveBeenCalledTimes(2)
   })
 
+  it('muestra el error cuando falla el reintento de carga', async () => {
+    vi.mocked(obtenerProductosAdmin)
+      .mockRejectedValueOnce(new Error('Error inicial'))
+      .mockRejectedValueOnce(new Error('Error al reintentar'))
+
+    render(<AdminPanel vistaAdmin="inventario" />)
+
+    expect(await screen.findByRole('alert')).toBeTruthy()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Reintentar' }))
+
+    expect(
+      await screen.findByText(/Error al reintentar/),
+    ).toBeTruthy()
+  })
+
+  it('muestra el error predeterminado cuando falla una recarga con un valor desconocido', async () => {
+    vi.mocked(obtenerProductosAdmin)
+      .mockResolvedValueOnce(productos)
+      .mockRejectedValueOnce('fallo desconocido')
+
+    vi.mocked(obtenerCategoriasAdmin).mockResolvedValueOnce(
+      categoriasDisponibles,
+    )
+
+    render(<AdminPanel vistaAdmin="inventario" />)
+
+    await screen.findByRole('heading', { name: 'Chocolate' })
+
+    fireEvent.click(screen.getByRole('button', { name: '+ Crear producto' }))
+
+    const formulario = screen
+      .getByRole('heading', { name: 'Nuevo producto' })
+      .closest('form')
+
+    expect(formulario).not.toBeNull()
+
+    if (!formulario) return
+
+    fireEvent.change(
+      within(formulario).getByLabelText(/Nombre del producto/),
+      { target: { value: 'Torta nueva' } },
+    )
+
+    fireEvent.change(
+      within(formulario).getByRole('combobox'),
+      { target: { value: 'dulces' } },
+    )
+
+    fireEvent.change(
+      within(formulario).getByLabelText(/Nombre de la variante/),
+      { target: { value: 'Unidad' } },
+    )
+
+    fireEvent.change(
+      within(formulario).getByLabelText(/SKU/),
+      { target: { value: 'TORTA-001' } },
+    )
+
+    fireEvent.change(
+      within(formulario).getByLabelText(/Precio/),
+      { target: { value: '8.50' } },
+    )
+
+    fireEvent.click(
+      within(formulario).getByRole('button', { name: /Guardar producto/ }),
+    )
+
+    expect(
+      await screen.findByText(
+        /No se pudieron cargar los productos administrativos/,
+      ),
+    ).toBeTruthy()
+  })
+
+  it('muestra el mensaje predeterminado si falla el reintento con un valor desconocido', async () => {
+    vi.mocked(obtenerProductosAdmin).mockRejectedValueOnce(
+      new Error('Error inicial'),
+    )
+
+    render(<AdminPanel vistaAdmin="inventario" />)
+
+    expect(await screen.findByText(/Error inicial/)).toBeTruthy()
+
+    vi.mocked(obtenerProductosAdmin).mockRejectedValueOnce(
+      'fallo desconocido',
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Reintentar' }))
+
+    expect(
+      await screen.findByText(
+        /No se pudieron cargar los productos administrativos/,
+      ),
+    ).toBeTruthy()
+  })
+
   it('muestra el mensaje predeterminado cuando el rechazo no es un Error', async () => {
     vi.mocked(obtenerProductosAdmin).mockRejectedValueOnce(
       'fallo desconocido',
     )
 
-    render(<AdminPanel alVolverATienda={vi.fn()} />)
+    render(<AdminPanel vistaAdmin="inventario" />)
 
     expect(await screen.findByRole('alert')).toBeTruthy()
     expect(
@@ -527,32 +677,63 @@ describe('AdminPanel', () => {
     ).toBeTruthy()
   })
 
-  it('muestra un error si falla la carga de categorÃ­as', async () => {
+  it('muestra un error si falla la carga de categorias', async () => {
     vi.mocked(obtenerProductosAdmin).mockResolvedValue(productos)
     vi.mocked(obtenerCategoriasAdmin).mockRejectedValueOnce(
-      new Error('Error de categorÃ­as'),
+      new Error('Error de categorias'),
     )
 
-    render(<AdminPanel alVolverATienda={vi.fn()} />)
+    render(<AdminPanel vistaAdmin="inventario" />)
 
     expect(await screen.findByRole('alert')).toBeTruthy()
-    expect(screen.getByText(/Error de categorÃ­as/)).toBeTruthy()
+    expect(screen.getByText(/Error de categorias/)).toBeTruthy()
     expect(screen.queryByLabelText('Resumen del inventario')).toBeNull()
   })
 
   it('guarda la descripción del producto y vuelve a cargar el inventario', async () => {
-    vi.mocked(obtenerProductosAdmin).mockResolvedValue(productos)
+    vi.mocked(obtenerProductosAdmin).mockResolvedValue([
+      crearProducto('1', 'Chocolate', 'Dulces', {
+        descripcion: 'Chocolate oscuro',
+        imagenUrl: '/chocolate.png',
+        variantes: [
+          crearVariante('ch-1', '5.00', 5),
+          crearVariante('ch-2', '2.50', 3),
+        ],
+      }),
+      crearProducto('2', 'Caramelo', 'Confites', {
+        descripcion: 'Caramelo de menta',
+        variantes: [crearVariante('ca-1', '1.25', 7)],
+      }),
+    ])
 
-    render(<AdminPanel alVolverATienda={vi.fn()} />)
+    render(<AdminPanel vistaAdmin="inventario" />)
 
-    await screen.findByRole('heading', { name: 'Chocolate' })
+    const detalle = await screen.findByRole('region', {
+      name: 'Detalle de Chocolate',
+    })
 
-    fireEvent.change(
-      screen.getByRole('textbox', { name: 'Descripción del producto' }),
-      { target: { value: 'Chocolate artesanal' } },
-    )
+    const obtenerCampoDescripcion = () =>
+      within(detalle).getByRole('textbox', {
+        name: 'Descripción del producto',
+      }) as HTMLTextAreaElement
 
-    const botonGuardar = screen.getByRole('button', {
+    await waitFor(() => {
+      expect(obtenerCampoDescripcion().value).toBe(
+        'Chocolate oscuro',
+      )
+    })
+
+    fireEvent.change(obtenerCampoDescripcion(), {
+      target: { value: 'Chocolate artesanal' },
+    })
+
+    await waitFor(() => {
+      expect(obtenerCampoDescripcion().value).toBe(
+        'Chocolate artesanal',
+      )
+    })
+
+    const botonGuardar = within(detalle).getByRole('button', {
       name: 'Guardar cambios',
     })
 
@@ -576,10 +757,11 @@ describe('AdminPanel', () => {
     })
   })
 
+
   it('guarda los cambios de variante y ajusta el stock de la misma variante', async () => {
     vi.mocked(obtenerProductosAdmin).mockResolvedValue(productos)
 
-    render(<AdminPanel alVolverATienda={vi.fn()} />)
+    render(<AdminPanel vistaAdmin="inventario" />)
 
     const detalle = await screen.findByRole('region', {
       name: 'Detalle de Chocolate',
@@ -591,7 +773,7 @@ describe('AdminPanel', () => {
     expect(articuloVariante).not.toBeNull()
 
     if (!articuloVariante) {
-      throw new Error('No se encontró el artÃ­culo de la variante ch-1')
+      throw new Error('No se encontrÃ³ el artÃƒÂ­culo de la variante ch-1')
     }
 
     fireEvent.click(
@@ -649,7 +831,7 @@ describe('AdminPanel', () => {
   it('permite abrir y cerrar el editor de URL de imagen', async () => {
     vi.mocked(obtenerProductosAdmin).mockResolvedValue(productos)
 
-    render(<AdminPanel alVolverATienda={vi.fn()} />)
+    render(<AdminPanel vistaAdmin="inventario" />)
 
     const detalle = await screen.findByRole('region', {
       name: 'Detalle de Chocolate',
@@ -678,7 +860,7 @@ describe('AdminPanel', () => {
     expect(botonUrl.getAttribute('aria-expanded')).toBe('false')
   })
 
-  it('mantiene el panel operativo cuando no hay categorÃ­as activas', async () => {
+  it('mantiene el panel operativo cuando no hay categorÃƒÂ­as activas', async () => {
     vi.mocked(obtenerProductosAdmin).mockResolvedValue(productos)
     vi.mocked(obtenerCategoriasAdmin).mockResolvedValue([
       {
@@ -689,22 +871,21 @@ describe('AdminPanel', () => {
       },
     ])
 
-    render(<AdminPanel alVolverATienda={vi.fn()} />)
+    render(<AdminPanel vistaAdmin="inventario" />)
 
     expect(
       await screen.findByRole('heading', { name: 'Chocolate' }),
     ).toBeTruthy()
-    expect(screen.getByRole('heading', { name: 'Inventario' })).toBeTruthy()
   })
 
-  it('incluye únicamente las categorÃ­as activas para editar productos', async () => {
+  it('incluye Ãºnicamente las categorÃƒÂ­as activas para editar productos', async () => {
     vi.mocked(obtenerProductosAdmin).mockResolvedValue(productos)
     vi.mocked(obtenerCategoriasAdmin).mockResolvedValue([
       { id: 'dulces', nombre: 'Dulces', slug: 'dulces', activa: true },
       { id: 'inactiva', nombre: 'Inactiva', slug: 'inactiva', activa: false },
     ])
 
-    render(<AdminPanel alVolverATienda={vi.fn()} />)
+    render(<AdminPanel vistaAdmin="inventario" />)
 
     expect(
       await screen.findByRole('heading', { name: 'Chocolate' }),
@@ -715,7 +896,7 @@ describe('AdminPanel', () => {
   it('carga una imagen adicional de variante y recarga los productos', async () => {
     vi.mocked(obtenerProductosAdmin).mockResolvedValue(productos)
 
-    render(<AdminPanel alVolverATienda={vi.fn()} />)
+    render(<AdminPanel vistaAdmin="inventario" />)
 
     const detalle = await screen.findByRole('region', {
       name: 'Detalle de Chocolate',
@@ -727,7 +908,7 @@ describe('AdminPanel', () => {
     expect(articuloVariante).not.toBeNull()
 
     if (!articuloVariante) {
-      throw new Error('No se encontró el artÃ­culo de la variante ch-1')
+      throw new Error('No se encontrÃ³ el artÃƒÂ­culo de la variante ch-1')
     }
 
     fireEvent.click(
@@ -751,7 +932,7 @@ describe('AdminPanel', () => {
       revokeObjectURL: vi.fn(),
     })
 
-    render(<AdminPanel alVolverATienda={vi.fn()} />)
+    render(<AdminPanel vistaAdmin="inventario" />)
 
     await screen.findByRole('heading', { name: 'Chocolate' })
 
@@ -764,10 +945,10 @@ describe('AdminPanel', () => {
       .closest('form')
 
     if (!formulario) {
-      throw new Error('No se encontró el formulario de creaciÃ³n')
+      throw new Error('No se encontrÃ³ el formulario de creaciÃƒÂ³n')
     }
 
-    const campoCategoria = within(formulario).getByLabelText('Categoría *')
+    const campoCategoria = within(formulario).getByRole('combobox')
 
     expect(
       within(formulario).getByRole('option', { name: 'Dulces' }),

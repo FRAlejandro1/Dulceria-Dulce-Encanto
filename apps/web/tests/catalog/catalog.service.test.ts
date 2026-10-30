@@ -47,6 +47,8 @@ describe('obtenerProductosCatalogo', () => {
 
     expect(productos).toEqual([productoValido])
     expect(fetchMock).toHaveBeenCalledWith('/api/v1/catalog/products', {
+      method: 'GET',
+      cache: 'no-store',
       signal: controlador.signal,
       headers: { Accept: 'application/json' },
     })
