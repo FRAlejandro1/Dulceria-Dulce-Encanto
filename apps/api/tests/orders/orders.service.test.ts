@@ -292,3 +292,48 @@ describe('crearPedido', () => {
     expect(crearRegistroPedido).not.toHaveBeenCalled();
   });
 });
+
+describe('variantes que dejan de estar disponibles durante la creación', () => {
+  it('rechaza una variante que desaparece antes de guardar sus detalles', async () => {
+    let lecturas = 0;
+    const item = {
+      cantidad: 3,
+      get varianteId() {
+        lecturas += 1;
+        return lecturas <= 2 ? '5' : '999';
+      },
+    };
+
+    await expect(
+      crearPedido('20', { ...datos, items: [item] }),
+    ).rejects.toMatchObject({
+      status: 409,
+      mensajePublico: 'Una de las variantes seleccionadas no está disponible.',
+    });
+
+    expect(crearRegistroPedido).toHaveBeenCalled();
+    expect(crearDetallePedido).not.toHaveBeenCalled();
+  });
+
+  it('rechaza una variante que desaparece al preparar la notificación', async () => {
+    let lecturas = 0;
+    const item = {
+      cantidad: 3,
+      get varianteId() {
+        lecturas += 1;
+        return lecturas <= 3 ? '5' : '999';
+      },
+    };
+
+    await expect(
+      crearPedido('20', { ...datos, items: [item] }),
+    ).rejects.toMatchObject({
+      status: 409,
+      mensajePublico: 'Una de las variantes seleccionadas no está disponible.',
+    });
+
+    expect(crearDetallePedido).toHaveBeenCalled();
+    expect(registrarAuditoria).toHaveBeenCalled();
+    expect(notificarPedidoCreado).not.toHaveBeenCalled();
+  });
+});

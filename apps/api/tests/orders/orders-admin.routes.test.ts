@@ -6,16 +6,25 @@ const {
   cambiarEstadoPedidoAdmin,
   consultarPedidosAdmin,
   consultarVentasMensualesAdmin,
+  consultarDashboardPedidosAdmin,
+  consultarClientesPedidosAdmin,
+  consultarDetallePedidoAdmin,
 } = vi.hoisted(() => ({
   cambiarEstadoPedidoAdmin: vi.fn(),
   consultarPedidosAdmin: vi.fn(),
   consultarVentasMensualesAdmin: vi.fn(),
+  consultarDashboardPedidosAdmin: vi.fn(),
+  consultarClientesPedidosAdmin: vi.fn(),
+  consultarDetallePedidoAdmin: vi.fn(),
 }));
 
 vi.mock('../../src/modules/orders/orders-admin.service.js', () => ({
   cambiarEstadoPedidoAdmin,
   consultarPedidosAdmin,
   consultarVentasMensualesAdmin,
+  consultarDashboardPedidosAdmin,
+  consultarClientesPedidosAdmin,
+  consultarDetallePedidoAdmin,
 }));
 
 vi.mock('../../src/shared/security/authentication.middleware.js', () => ({
@@ -154,6 +163,91 @@ describe('orders-admin.routes', () => {
     const respuesta = await request(app)
       .patch('/admin/orders/12/status')
       .send({ estado: 'CONFIRMADO' });
+
+    expect(respuesta.status).toBe(500);
+  });
+
+  it('consulta el dashboard administrativo', async () => {
+    consultarDashboardPedidosAdmin.mockResolvedValueOnce({
+      estados: [{ estado: 'PENDIENTE', total: 2 }],
+    });
+
+    const respuesta = await request(app).get('/admin/orders/dashboard');
+
+    expect(respuesta.status).toBe(200);
+    expect(respuesta.body.estados).toEqual([
+      { estado: 'PENDIENTE', total: 2 },
+    ]);
+    expect(consultarDashboardPedidosAdmin).toHaveBeenCalledOnce();
+  });
+
+  it('propaga errores al consultar el dashboard', async () => {
+    consultarDashboardPedidosAdmin.mockRejectedValueOnce(
+      new Error('Error dashboard'),
+    );
+
+    const respuesta = await request(app).get('/admin/orders/dashboard');
+
+    expect(respuesta.status).toBe(500);
+  });
+
+  it('consulta los clientes de pedidos', async () => {
+    consultarClientesPedidosAdmin.mockResolvedValueOnce({
+      clientes: [{ id: '15' }],
+      totalClientes: 1,
+      pagina: 1,
+      limite: 8,
+    });
+
+    const respuesta = await request(app).get('/admin/orders/customers');
+
+    expect(respuesta.status).toBe(200);
+    expect(respuesta.body.clientes).toEqual([{ id: '15' }]);
+    expect(consultarClientesPedidosAdmin).toHaveBeenCalledOnce();
+  });
+
+  it('propaga errores al consultar clientes', async () => {
+    consultarClientesPedidosAdmin.mockRejectedValueOnce(
+      new Error('Error clientes'),
+    );
+
+    const respuesta = await request(app).get('/admin/orders/customers');
+
+    expect(respuesta.status).toBe(500);
+  });
+
+  it.each(['abc', '-1', '1.5'])(
+    'rechaza identificadores inválidos al consultar el detalle: %s',
+    async (id) => {
+      const respuesta = await request(app).get(`/admin/orders/${id}`);
+
+      expect(respuesta.status).toBe(400);
+      expect(consultarDetallePedidoAdmin).not.toHaveBeenCalled();
+    },
+  );
+
+  it('consulta el detalle de un pedido', async () => {
+    consultarDetallePedidoAdmin.mockResolvedValueOnce({
+      id: '12',
+      items: [],
+    });
+
+    const respuesta = await request(app).get('/admin/orders/12');
+
+    expect(respuesta.status).toBe(200);
+    expect(respuesta.body.pedido).toEqual({
+      id: '12',
+      items: [],
+    });
+    expect(consultarDetallePedidoAdmin).toHaveBeenCalledWith('12');
+  });
+
+  it('propaga errores al consultar el detalle', async () => {
+    consultarDetallePedidoAdmin.mockRejectedValueOnce(
+      new Error('Error detalle'),
+    );
+
+    const respuesta = await request(app).get('/admin/orders/12');
 
     expect(respuesta.status).toBe(500);
   });
