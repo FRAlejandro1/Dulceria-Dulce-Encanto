@@ -78,7 +78,7 @@ describe('ProductCard', () => {
     expect(screen.getByText('Pruebas')).toBeTruthy()
     expect(screen.getByText('DescripciÃ³n de prueba.')).toBeTruthy()
     expect(screen.getByText('$1.00')).toBeTruthy()
-    expect(screen.getByText('2 disponibles')).toBeTruthy()
+    expect(screen.getByText('2 disponibles para agregar')).toBeTruthy()
 
     const imagen = screen.getByRole('img', { name: 'Producto de prueba' })
     expect(imagen.getAttribute('src')).toContain('images.unsplash.com')
@@ -199,7 +199,7 @@ describe('ProductCard', () => {
     renderizarTarjeta({ varianteIndex: 1 })
 
     expect(screen.getByText('$3.50')).toBeTruthy()
-    expect(screen.getByText('5 disponibles')).toBeTruthy()
+    expect(screen.getByText('5 disponibles para agregar')).toBeTruthy()
   })
 })
 
@@ -246,7 +246,7 @@ describe('ProductCard: ramas adicionales', () => {
     expect(imagen.getAttribute('src')).toBe(origenInicial)
   })
 
-  it('usa la categoría predeterminada cuando el nombre está vacío', () => {
+  it('usa la categorÃ­a predeterminada cuando el nombre estÃ¡ vacÃ­o', () => {
     const productoSinCategoria: Producto = {
       ...producto,
       categoria: {
@@ -272,7 +272,7 @@ describe('ProductCard: ramas adicionales', () => {
 
   it.each([
     ['precio negativo', '-1.50'],
-    ['precio no numérico', 'inválido'],
+    ['precio no numÃ©rico', 'invÃ¡lido'],
   ])('muestra cero con un %s', (_caso, precio) => {
     const productoConPrecioInvalido: Producto = {
       ...producto,
@@ -314,7 +314,7 @@ describe('ProductCard: ramas adicionales', () => {
 
     expect(
       screen.queryByRole('combobox', {
-        name: 'Presentación de Producto de prueba',
+        name: 'PresentaciÃ³n de Producto de prueba',
       }),
     ).toBeNull()
   })

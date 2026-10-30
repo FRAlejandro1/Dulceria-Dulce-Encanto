@@ -25,6 +25,8 @@ export async function obtenerProductosCatalogo(
   signal: AbortSignal,
 ): Promise<Producto[]> {
   const respuesta = await fetch(RUTA_CATALOGO, {
+    method: 'GET',
+    cache: 'no-store',
     signal,
     headers: {
       Accept: 'application/json',

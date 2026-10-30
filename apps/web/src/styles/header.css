@@ -16,6 +16,14 @@
   flex-shrink: 0;
   align-items: center;
   gap: 11px;
+  color: var(--color-texto);
+  text-decoration: none;
+}
+
+.brand:hover,
+.brand:focus {
+  color: var(--color-texto);
+  text-decoration: none;
 }
 
 .brand__copy {
@@ -237,4 +245,39 @@
   height: 30px;
   border-radius: 10px;
   font-size: 14px;
+}
+
+/* Navegación administrativa del encabezado */
+.admin-header-nav {
+  gap: 12px;
+}
+
+.admin-header-nav .main-nav__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 13px;
+  border-radius: 10px;
+  transition: background-color 160ms ease, color 160ms ease;
+}
+
+.admin-header-nav .main-nav__item:hover,
+.admin-header-nav .main-nav__item--active {
+  background: var(--color-acento-suave);
+  color: var(--color-acento-hover);
+}
+
+.admin-header-nav .main-nav__item--active::after {
+  display: none;
+}
+
+.admin-header-nav svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }

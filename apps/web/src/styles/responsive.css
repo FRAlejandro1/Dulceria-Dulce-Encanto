@@ -155,3 +155,13 @@
     right: 5%;
   }
 }
+@media (max-width: 600px) {
+  .admin-header-nav {
+    justify-content: center;
+    gap: 12px;
+  }
+
+  .admin-header-nav .main-nav__item {
+    padding: 9px 16px;
+  }
+}

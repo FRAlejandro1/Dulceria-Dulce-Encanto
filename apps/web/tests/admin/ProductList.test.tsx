@@ -121,7 +121,7 @@ function crearArchivo(
 function prepararUrlObject() {
     const URLOriginal = globalThis.URL
 
-    class URLConVistaPrevia extends URLOriginal {}
+    class URLConVistaPrevia extends URLOriginal { }
 
     Object.defineProperties(URLConVistaPrevia, {
         createObjectURL: {
@@ -799,5 +799,19 @@ describe('ProductList: carga de imagen después de crear', () => {
             screen.getByRole('button', { name: 'Reintentar imagen' }),
         ).toBeTruthy()
         expect(props.onCrearProducto).toHaveBeenCalledOnce()
+    })
+
+    it('ignora la selección cuando no se proporciona ningún archivo', () => {
+        render(<ProductList {...crearPropiedades()} />)
+        abrirFormulario()
+
+        fireEvent.change(
+            screen.getByLabelText('Seleccionar imagen del producto'),
+            { target: { files: [] } },
+        )
+
+        expect(
+            screen.queryByRole('alert'),
+        ).toBeNull()
     })
 })

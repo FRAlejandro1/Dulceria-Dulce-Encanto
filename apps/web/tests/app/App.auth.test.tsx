@@ -1,4 +1,4 @@
-﻿import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import {
     afterEach,
     beforeEach,
@@ -42,6 +42,10 @@ function configurarFetchAutenticacion(
 
             if (ruta === '/api/v1/catalog/products') {
                 return respuesta({ productos: [] })
+            }
+
+            if (ruta === '/api/v1/favorites') {
+                return respuesta({ favoritos: [] })
             }
 
             if (ruta === '/api/v1/auth/csrf') {
@@ -133,10 +137,11 @@ describe('Integración de autenticación en App', () => {
             ).toContain('Ana Pérez')
         })
 
-        expect(
-            await screen.findByText(/Sesión iniciada como Ana Pérez/i),
-        ).toBeTruthy()
-
+        await waitFor(() => {
+            expect(
+                screen.getByRole('status').textContent,
+            ).toContain('Sesión iniciada como Ana Pérez')
+        })
         expect(fetchSimulado).toHaveBeenCalledWith(
             '/api/v1/auth/csrf',
             expect.objectContaining({ method: 'GET' }),
@@ -222,6 +227,139 @@ describe('Integración de autenticación en App', () => {
         ).toBeTruthy()
     })
 
+    it('crea un pedido y recarga el catálogo', async () => {
+        const producto = {
+            id: 'caramelos-surtidos',
+            nombre: 'Caramelos surtidos',
+            descripcion: 'Caramelos de diferentes sabores.',
+            categoria: { nombre: 'Caramelos', slug: 'caramelos' },
+            variantes: [
+                {
+                    id: 'var-caramelos',
+                    nombre: 'Unidad',
+                    sku: 'CAR-001',
+                    precio: '0.50',
+                    stockDisponible: 40,
+                },
+            ],
+        }
+
+        let solicitudesCatalogo = 0
+
+        const fetchSimulado = configurarFetchAutenticacion()
+
+        fetchSimulado.mockImplementation(
+            async (
+                entrada: RequestInfo | URL,
+                opciones?: RequestInit,
+            ): Promise<Response> => {
+                const ruta = String(entrada)
+
+                if (ruta === '/api/v1/catalog/products') {
+                    solicitudesCatalogo += 1
+                    return respuesta({ productos: [producto] })
+                }
+
+                if (ruta === '/api/v1/favorites') {
+                return respuesta({ favoritos: [] })
+            }
+
+            if (ruta === '/api/v1/auth/csrf') {
+                    return respuesta({ csrfToken: 'token-csrf-prueba' })
+                }
+
+                if (ruta === '/api/v1/auth/login') {
+                    return respuesta({
+                        usuario: usuarioPrueba,
+                        expiraEn: '2027-01-01T00:00:00.000Z',
+                    })
+                }
+
+                if (ruta === '/api/v1/orders' && opciones?.method === 'POST') {
+                    return respuesta(
+                        {
+                            pedido: {
+                                id: 'pedido-1',
+                                numero: 'PED-001',
+                                estado: 'PENDIENTE',
+                                subtotal: 0.5,
+                                total: 0.5,
+                            },
+                        },
+                        201,
+                    )
+                }
+
+                return respuesta(
+                    { error: 'Ruta no encontrada.' },
+                    404,
+                    false,
+                )
+            },
+        )
+
+        render(<App />)
+
+        await screen.findByRole('heading', { name: 'Caramelos surtidos' })
+
+        fireEvent.click(
+            screen.getByRole('button', { name: /agregar/i }),
+        )
+
+        fireEvent.click(
+            screen.getByRole('button', { name: /^Carrito, 1 productos$/i }),
+        )
+
+        fireEvent.click(
+            screen.getByRole('button', { name: /finalizar pedido/i }),
+        )
+
+        fireEvent.click(
+            await screen.findByRole('button', { name: 'Abrir perfil' }),
+        )
+
+        await screen.findByRole('dialog')
+        await enviarInicioSesion()
+
+        await waitFor(() => {
+            expect(screen.queryByRole('dialog')).toBeNull()
+        })
+
+        fireEvent.click(
+            screen.getByRole('button', { name: /^Carrito, 1 productos$/i }),
+        )
+
+        fireEvent.click(
+            screen.getByRole('button', { name: /finalizar pedido/i }),
+        )
+
+        fireEvent.click(
+            await screen.findByRole('button', { name: 'Confirmar pedido' }),
+        )
+
+        expect(
+            await screen.findByText('Pedido PED-001 creado correctamente.'),
+        ).toBeTruthy()
+
+        await waitFor(() => {
+            expect(solicitudesCatalogo).toBeGreaterThanOrEqual(2)
+        })
+
+        expect(fetchSimulado).toHaveBeenCalledWith(
+            '/api/v1/orders',
+            expect.objectContaining({
+                method: 'POST',
+                headers: expect.objectContaining({
+                    'X-CSRF-Token': 'token-csrf-prueba',
+                }),
+            }),
+        )
+
+        expect(
+            screen.queryByRole('heading', { name: 'Finalizar pedido' }),
+        ).toBeNull()
+    })
+
     it('abre el panel administrativo al iniciar sesión como ADMIN', async () => {
         const usuarioAdmin = {
             id: 'admin-1',
@@ -245,7 +383,11 @@ describe('Integración de autenticación en App', () => {
                     return respuesta({ productos: [] })
                 }
 
-                if (ruta === '/api/v1/auth/csrf') {
+                if (ruta === '/api/v1/favorites') {
+                return respuesta({ favoritos: [] })
+            }
+
+            if (ruta === '/api/v1/auth/csrf') {
                     return respuesta({ csrfToken: 'token-csrf-prueba' })
                 }
 
@@ -278,7 +420,7 @@ describe('Integración de autenticación en App', () => {
         ).toBeTruthy()
 
         expect(
-            await screen.findByRole('heading', { name: 'Inventario' }),
+            await screen.findByRole('button', { name: 'Inventario' }),
         ).toBeTruthy()
 
         await waitFor(() => {
@@ -293,7 +435,7 @@ describe('Integración de autenticación en App', () => {
         })
 
         fireEvent.click(
-            screen.getByRole('button', { name: 'Volver a la tienda' }),
+            screen.getByRole('link', { name: 'Dulce Encanto, inicio' }),
         )
 
         expect(
@@ -301,6 +443,144 @@ describe('Integración de autenticación en App', () => {
         ).toBeTruthy()
     })
 
+    it('carga las notificaciones al abrir el panel y permite marcarlas como leídas', async () => {
+        const fetchSimulado = configurarFetchAutenticacion()
 
+        fetchSimulado.mockImplementation(
+            async (
+                entrada: RequestInfo | URL,
+                opciones?: RequestInit,
+            ): Promise<Response> => {
+                const ruta = String(entrada)
 
+                if (ruta === '/api/v1/catalog/products') {
+                    return respuesta({ productos: [] })
+                }
+
+                if (ruta === '/api/v1/favorites') {
+                return respuesta({ favoritos: [] })
+            }
+
+            if (ruta === '/api/v1/auth/csrf') {
+                    return respuesta({ csrfToken: 'token-csrf-prueba' })
+                }
+
+                if (ruta === '/api/v1/auth/login') {
+                    return respuesta({
+                        usuario: usuarioPrueba,
+                        expiraEn: '2027-01-01T00:00:00.000Z',
+                    })
+                }
+
+                if (ruta === '/api/v1/orders/notifications') {
+                    return respuesta({
+                        notificaciones: [
+                            {
+                                id: 'notificacion-1',
+                                pedidoId: 'pedido-1',
+                                titulo: 'Pedido recibido',
+                                mensaje: 'Tu pedido fue registrado.',
+                                leidaEn: null,
+                                creadaEn: '2026-10-29T12:00:00.000Z',
+                            },
+                        ],
+                    })
+                }
+
+                if (
+                    ruta === '/api/v1/orders/notifications/notificacion-1/read' &&
+                    opciones?.method === 'PATCH'
+                ) {
+                    return respuesta({})
+                }
+
+                return respuesta({ error: 'Ruta no encontrada.' }, 404, false)
+            },
+        )
+
+        await iniciarSesionYReabrirPerfil()
+
+        fireEvent.click(
+            screen.getByRole('button', { name: /notificaciones/i }),
+        )
+
+        expect(
+            await screen.findByText('Tu pedido fue registrado.'),
+        ).toBeTruthy()
+
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Marcar como leída' }),
+        )
+
+        await waitFor(() => {
+            expect(fetchSimulado).toHaveBeenCalledWith(
+                '/api/v1/orders/notifications/notificacion-1/read',
+                expect.objectContaining({ method: 'PATCH' }),
+            )
+        })
+    })
+
+    it('permite reintentar la carga de notificaciones después de un error', async () => {
+        const fetchSimulado = configurarFetchAutenticacion()
+        let intentos = 0
+
+        fetchSimulado.mockImplementation(
+            async (entrada: RequestInfo | URL): Promise<Response> => {
+                const ruta = String(entrada)
+
+                if (ruta === '/api/v1/catalog/products') {
+                    return respuesta({ productos: [] })
+                }
+
+                if (ruta === '/api/v1/favorites') {
+                return respuesta({ favoritos: [] })
+            }
+
+            if (ruta === '/api/v1/auth/csrf') {
+                    return respuesta({ csrfToken: 'token-csrf-prueba' })
+                }
+
+                if (ruta === '/api/v1/auth/login') {
+                    return respuesta({
+                        usuario: usuarioPrueba,
+                        expiraEn: '2027-01-01T00:00:00.000Z',
+                    })
+                }
+
+                if (ruta === '/api/v1/orders/notifications') {
+                    intentos += 1
+
+                    if (intentos <= 2) {
+                        return respuesta(
+                            { error: 'Error de conexión' },
+                            500,
+                            false,
+                        )
+                    }
+
+                    return respuesta({ notificaciones: [] })
+                }
+
+                return respuesta({ error: 'Ruta no encontrada.' }, 404, false)
+            },
+        )
+
+        await iniciarSesionYReabrirPerfil()
+
+        fireEvent.click(
+            screen.getByRole('button', { name: /notificaciones/i }),
+        )
+
+        expect(await screen.findByRole('alert')).toBeTruthy()
+
+        fireEvent.click(screen.getByRole('button', { name: 'Reintentar' }))
+
+        await waitFor(() => {
+            expect(intentos).toBeGreaterThanOrEqual(2)
+        })
+
+        expect(
+            await screen.findByText('No tienes notificaciones nuevas.'),
+        ).toBeTruthy()
+    })
 })
