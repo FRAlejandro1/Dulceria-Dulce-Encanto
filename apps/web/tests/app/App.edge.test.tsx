@@ -620,7 +620,7 @@ describe('Casos límite del catálogo', () => {
     ).toBeTruthy()
 
     expect(
-      screen.getByText('No tienes notificaciones nuevas.'),
+      screen.getByText('Inicia sesión para consultar tus notificaciones.'),
     ).toBeTruthy()
 
     fireEvent.click(
@@ -642,7 +642,7 @@ describe('Casos límite del catálogo', () => {
     )
 
     expect(
-      screen.getByText('No tienes notificaciones nuevas.'),
+      screen.getByText('Inicia sesión para consultar tus notificaciones.'),
     ).toBeTruthy()
 
     fireEvent.click(
@@ -650,7 +650,7 @@ describe('Casos límite del catálogo', () => {
     )
 
     expect(
-      screen.queryByText('No tienes notificaciones nuevas.'),
+      screen.queryByText('Inicia sesión para consultar tus notificaciones.'),
     ).toBeNull()
 
     expect(
@@ -881,6 +881,7 @@ describe('Validación de adiciones al carrito', () => {
     sku: 'PRU-001',
     precio: '1.00',
     stockDisponible: 2,
+    imagenUrl: null,
   }
 
   it('rechaza productos sin variantes', () => {

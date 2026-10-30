@@ -214,4 +214,59 @@ describe('useFavorites', () => {
       )
     })
   })
+
+  it('ignora la respuesta de favoritos si el componente se desmonta durante la carga', async () => {
+    let resolverCarga!: (favoritos: string[]) => void
+
+    obtenerFavoritosMock.mockReturnValueOnce(
+      new Promise<string[]>((resolve) => {
+        resolverCarga = resolve
+      }),
+    )
+
+    const { unmount } = renderHook(() => useFavorites(usuario))
+
+    unmount()
+
+    await act(async () => {
+      resolverCarga(['1'])
+    })
+
+    expect(obtenerFavoritosMock).toHaveBeenCalledOnce()
+  })
+
+  it('evita operaciones duplicadas y conserva un favorito recibido durante la carga', async () => {
+    let resolverCarga!: (favoritos: string[]) => void
+    let resolverAdicion!: () => void
+
+    obtenerFavoritosMock.mockReturnValueOnce(
+      new Promise<string[]>((resolve) => {
+        resolverCarga = resolve
+      }),
+    )
+
+    agregarFavoritoMock.mockReturnValueOnce(
+      new Promise<void>((resolve) => {
+        resolverAdicion = resolve
+      }),
+    )
+
+    const { result } = renderHook(() => useFavorites(usuario))
+
+    let operacion!: Promise<void>
+
+    await act(async () => {
+      operacion = result.current.alternarFavorito('5')
+      await result.current.alternarFavorito('5')
+
+      resolverCarga(['5'])
+      await Promise.resolve()
+
+      resolverAdicion()
+      await operacion
+    })
+
+    expect(agregarFavoritoMock).toHaveBeenCalledTimes(1)
+    expect(result.current.favoritos).toEqual(['5'])
+  })
 })

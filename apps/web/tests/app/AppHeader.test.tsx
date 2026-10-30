@@ -30,6 +30,7 @@ function renderizarCabecera(
     verFavoritos?: boolean
     panel?: 'ninguno' | 'notificaciones' | 'perfil'
     cantidadCarrito?: number
+    cantidadNotificacionesPendientes?: number
   } = {},
 ) {
   const callbacks = {
@@ -47,6 +48,7 @@ function renderizarCabecera(
     <AppHeader
       cantidadCarrito={opciones.cantidadCarrito ?? 0}
       cantidadFavoritos={3}
+      cantidadNotificacionesPendientes={opciones.cantidadNotificacionesPendientes ?? 0}
       temaOscuro={opciones.temaOscuro ?? false}
       usuario={opciones.usuario === undefined ? usuarioCliente : opciones.usuario}
       vistaAdministracion={opciones.vistaAdministracion ?? false}
@@ -146,5 +148,21 @@ describe('AppHeader', () => {
 
     expect(callbacks.onVolverAlInicio).toHaveBeenCalledOnce()
     expect(callbacks.onVolverATienda).not.toHaveBeenCalled()
+  })
+
+  it('muestra la cantidad de notificaciones pendientes', () => {
+    renderizarCabecera({ cantidadNotificacionesPendientes: 3 })
+
+    expect(
+      screen.getByRole('button', {
+        name: 'Notificaciones, 3 sin leer',
+      }),
+    ).toBeTruthy()
+
+    expect(
+      screen.getByRole('button', {
+        name: 'Notificaciones, 3 sin leer',
+      }).querySelector('.icon-button__badge')?.textContent,
+    ).toBe('3')
   })
 })

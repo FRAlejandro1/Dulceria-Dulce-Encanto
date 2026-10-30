@@ -431,6 +431,136 @@ describe('Integración de autenticación en App', () => {
         ).toBeTruthy()
     })
 
+    it('carga las notificaciones al abrir el panel y permite marcarlas como leídas', async () => {
+        const fetchSimulado = configurarFetchAutenticacion()
 
+        fetchSimulado.mockImplementation(
+            async (
+                entrada: RequestInfo | URL,
+                opciones?: RequestInit,
+            ): Promise<Response> => {
+                const ruta = String(entrada)
 
+                if (ruta === '/api/v1/catalog/products') {
+                    return respuesta({ productos: [] })
+                }
+
+                if (ruta === '/api/v1/auth/csrf') {
+                    return respuesta({ csrfToken: 'token-csrf-prueba' })
+                }
+
+                if (ruta === '/api/v1/auth/login') {
+                    return respuesta({
+                        usuario: usuarioPrueba,
+                        expiraEn: '2027-01-01T00:00:00.000Z',
+                    })
+                }
+
+                if (ruta === '/api/v1/orders/notifications') {
+                    return respuesta({
+                        notificaciones: [
+                            {
+                                id: 'notificacion-1',
+                                pedidoId: 'pedido-1',
+                                titulo: 'Pedido recibido',
+                                mensaje: 'Tu pedido fue registrado.',
+                                leidaEn: null,
+                                creadaEn: '2026-10-29T12:00:00.000Z',
+                            },
+                        ],
+                    })
+                }
+
+                if (
+                    ruta === '/api/v1/orders/notifications/notificacion-1/read' &&
+                    opciones?.method === 'PATCH'
+                ) {
+                    return respuesta({})
+                }
+
+                return respuesta({ error: 'Ruta no encontrada.' }, 404, false)
+            },
+        )
+
+        await iniciarSesionYReabrirPerfil()
+
+        fireEvent.click(
+            screen.getByRole('button', { name: /notificaciones/i }),
+        )
+
+        expect(
+            await screen.findByText('Tu pedido fue registrado.'),
+        ).toBeTruthy()
+
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Marcar como leída' }),
+        )
+
+        await waitFor(() => {
+            expect(fetchSimulado).toHaveBeenCalledWith(
+                '/api/v1/orders/notifications/notificacion-1/read',
+                expect.objectContaining({ method: 'PATCH' }),
+            )
+        })
+    })
+
+    it('permite reintentar la carga de notificaciones después de un error', async () => {
+        const fetchSimulado = configurarFetchAutenticacion()
+        let intentos = 0
+
+        fetchSimulado.mockImplementation(
+            async (entrada: RequestInfo | URL): Promise<Response> => {
+                const ruta = String(entrada)
+
+                if (ruta === '/api/v1/catalog/products') {
+                    return respuesta({ productos: [] })
+                }
+
+                if (ruta === '/api/v1/auth/csrf') {
+                    return respuesta({ csrfToken: 'token-csrf-prueba' })
+                }
+
+                if (ruta === '/api/v1/auth/login') {
+                    return respuesta({
+                        usuario: usuarioPrueba,
+                        expiraEn: '2027-01-01T00:00:00.000Z',
+                    })
+                }
+
+                if (ruta === '/api/v1/orders/notifications') {
+                    intentos += 1
+
+                    if (intentos <= 2) {
+                        return respuesta(
+                            { error: 'Error de conexión' },
+                            500,
+                            false,
+                        )
+                    }
+
+                    return respuesta({ notificaciones: [] })
+                }
+
+                return respuesta({ error: 'Ruta no encontrada.' }, 404, false)
+            },
+        )
+
+        await iniciarSesionYReabrirPerfil()
+
+        fireEvent.click(
+            screen.getByRole('button', { name: /notificaciones/i }),
+        )
+
+        expect(await screen.findByRole('alert')).toBeTruthy()
+
+        fireEvent.click(screen.getByRole('button', { name: 'Reintentar' }))
+
+        await waitFor(() => {
+            expect(intentos).toBeGreaterThanOrEqual(2)
+        })
+
+        expect(
+            await screen.findByText('No tienes notificaciones nuevas.'),
+        ).toBeTruthy()
+    })
 })

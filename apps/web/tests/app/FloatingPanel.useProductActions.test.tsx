@@ -43,9 +43,15 @@ function crearUsuario(rol: 'CLIENTE' | 'ADMIN'): UsuarioAutenticado {
 
 describe('FloatingPanel', () => {
   const callbacks = () => ({
+    notificaciones: [],
+    pendientes: 0,
+    cargandoNotificaciones: false,
+    errorNotificaciones: '',
     onCerrar: vi.fn(),
     onAbrirAutenticacion: vi.fn(),
     onAbrirAdministracion: vi.fn(),
+    onMarcarNotificacionLeida: vi.fn(),
+    onReintentarNotificaciones: vi.fn(),
   })
 
   it('no renderiza contenido cuando el panel está cerrado', () => {
@@ -57,7 +63,7 @@ describe('FloatingPanel', () => {
     expect(container.firstChild).toBeNull()
   })
 
-  it('muestra notificaciones y permite cerrar el panel', () => {
+  it('muestra el acceso de autenticación y permite cerrar el panel de notificaciones', () => {
     const props = callbacks()
 
     render(
@@ -71,11 +77,15 @@ describe('FloatingPanel', () => {
     expect(
       screen.getByRole('heading', { name: 'Notificaciones' }),
     ).toBeTruthy()
-    expect(screen.getByText('No tienes notificaciones nuevas.')).toBeTruthy()
+    expect(
+      screen.getByText('Inicia sesión para consultar tus notificaciones.'),
+    ).toBeTruthy()
+    expect(
+      screen.getByRole('button', { name: 'Iniciar sesión' }),
+    ).toBeTruthy()
 
     fireEvent.click(screen.getByRole('button', { name: 'Cerrar panel' }))
     expect(props.onCerrar).toHaveBeenCalledOnce()
-    expect(screen.queryByRole('button', { name: 'Iniciar sesión' })).toBeNull()
   })
 
   it('muestra el acceso de autenticación para usuarios anónimos', () => {
@@ -91,7 +101,9 @@ describe('FloatingPanel', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Iniciar sesión' }))
     expect(props.onAbrirAutenticacion).toHaveBeenCalledOnce()
-    expect(screen.queryByRole('button', { name: /Abrir administración/ })).toBeNull()
+    expect(
+      screen.queryByRole('button', { name: /Abrir administración/ }),
+    ).toBeNull()
   })
 
   it('muestra la cuenta de un cliente autenticado', () => {
@@ -130,6 +142,104 @@ describe('FloatingPanel', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Ver mi cuenta' }))
     expect(props.onAbrirAutenticacion).toHaveBeenCalledOnce()
+  })
+
+
+  it('muestra el indicador de carga', () => {
+    const props = callbacks()
+
+    render(
+      <FloatingPanel
+        panel="notificaciones"
+        usuario={crearUsuario('CLIENTE')}
+        {...props}
+        cargandoNotificaciones
+      />,
+    )
+
+    expect(screen.getByRole('status').textContent).toContain(
+      'Cargando notificaciones',
+    )
+  })
+
+  it('muestra el error y permite reintentar', () => {
+    const props = callbacks()
+
+    render(
+      <FloatingPanel
+        panel="notificaciones"
+        usuario={crearUsuario('CLIENTE')}
+        {...props}
+        errorNotificaciones="Error de conexión"
+      />,
+    )
+
+    expect(screen.getByRole('alert').textContent).toBe('Error de conexión')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Reintentar' }))
+    expect(props.onReintentarNotificaciones).toHaveBeenCalledOnce()
+  })
+
+  it('muestra el estado vacío para un cliente autenticado', () => {
+    const props = callbacks()
+
+    render(
+      <FloatingPanel
+        panel="notificaciones"
+        usuario={crearUsuario('CLIENTE')}
+        {...props}
+      />,
+    )
+
+    expect(screen.getByText('No tienes notificaciones nuevas.')).toBeTruthy()
+  })
+
+  it('muestra notificaciones leídas y pendientes y permite marcarlas como leídas', () => {
+    const props = callbacks()
+
+    render(
+      <FloatingPanel
+        panel="notificaciones"
+        usuario={crearUsuario('CLIENTE')}
+        {...props}
+        pendientes={1}
+        notificaciones={[
+          {
+            id: 'notificacion-1',
+            pedidoId: 'pedido-1',
+            titulo: 'Pedido recibido',
+            mensaje: 'Tu pedido fue registrado.',
+            leidaEn: null,
+            creadaEn: '2026-10-29T12:00:00.000Z',
+          },
+          {
+            id: 'notificacion-2',
+            pedidoId: null,
+            titulo: 'Pedido enviado',
+            mensaje: 'Tu pedido está en camino.',
+            leidaEn: '2026-10-29T13:00:00.000Z',
+            creadaEn: 'fecha-invalida',
+          },
+        ]}
+      />,
+    )
+
+    expect(
+      screen.getByRole('heading', { name: 'Notificaciones (1)' }),
+    ).toBeTruthy()
+    expect(screen.getByText('Tu pedido fue registrado.')).toBeTruthy()
+    expect(screen.getByText('Tu pedido está en camino.')).toBeTruthy()
+    expect(screen.getByText('fecha-invalida')).toBeTruthy()
+
+    const botones = screen.getAllByRole('button', {
+      name: 'Marcar como leída',
+    })
+    expect(botones).toHaveLength(1)
+
+    fireEvent.click(botones[0])
+    expect(props.onMarcarNotificacionLeida).toHaveBeenCalledWith(
+      'notificacion-1',
+    )
   })
 })
 

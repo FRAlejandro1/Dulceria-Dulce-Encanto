@@ -144,6 +144,24 @@ export async function crearPedido(usuarioId: string, datos: CrearPedido) {
       numero,
       usuarioId,
       total: subtotal,
+      items: datos.items.map((item) => {
+        const variante = porId.get(String(item.varianteId));
+
+        if (!variante) {
+          throw new ErrorAplicacion(
+            409,
+            'Una de las variantes seleccionadas no está disponible.',
+          );
+        }
+
+        return {
+          productoNombre: variante.productoNombre,
+          varianteNombre: variante.varianteNombre,
+          sku: variante.sku,
+          precio: Math.round(Number(variante.precio) * 100) / 100,
+          cantidad: item.cantidad,
+        };
+      }),
     });
 
     return {

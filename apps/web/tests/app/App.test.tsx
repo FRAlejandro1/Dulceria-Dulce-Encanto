@@ -538,22 +538,22 @@ describe('Catálogo de Dulce Encanto', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Notificaciones' }))
     expect(
-      screen.getByText('No tienes notificaciones nuevas.'),
+      screen.getByText('Inicia sesión para consultar tus notificaciones.'),
     ).toBeTruthy()
 
     fireEvent.click(screen.getByRole('button', { name: 'Cerrar panel' }))
     expect(
-      screen.queryByText('No tienes notificaciones nuevas.'),
+      screen.queryByText('Inicia sesión para consultar tus notificaciones.'),
     ).toBeNull()
 
     fireEvent.click(screen.getByRole('button', { name: 'Notificaciones' }))
     expect(
-      screen.getByText('No tienes notificaciones nuevas.'),
+      screen.getByText('Inicia sesión para consultar tus notificaciones.'),
     ).toBeTruthy()
 
     fireEvent.click(screen.getByRole('button', { name: 'Notificaciones' }))
     expect(
-      screen.queryByText('No tienes notificaciones nuevas.'),
+      screen.queryByText('Inicia sesión para consultar tus notificaciones.'),
     ).toBeNull()
   })
 

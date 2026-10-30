@@ -14,6 +14,7 @@ import { useAppSession } from './modules/app/hooks/useAppSession'
 import { useProductActions } from './modules/app/hooks/useProductActions'
 import { useFavorites } from './modules/favorites/hooks/useFavorites'
 import { useCreateOrder } from './modules/orders/hooks/useCreateOrder'
+import { useOrderNotifications } from './modules/orders/hooks/useOrderNotifications'
 import Toast from './modules/notifications/Toast'
 
 const Auth = lazy(() => import('./modules/auth/Auth'))
@@ -49,6 +50,15 @@ function App() {
     setVistaCarrito,
     setPanel,
   })
+
+  const {
+    notificaciones,
+    pendientes,
+    cargandoNotificaciones,
+    errorNotificaciones,
+    cargarNotificaciones,
+    marcarComoLeida,
+  } = useOrderNotifications(usuario)
 
   const { favoritos, alternarFavorito } = useFavorites(
     usuario,
@@ -102,7 +112,8 @@ function App() {
   const manejarPedidoCreado = useCallback(() => {
     cerrarCarrito()
     reintentarCarga()
-  }, [cerrarCarrito, reintentarCarga])
+    void cargarNotificaciones()
+  }, [cerrarCarrito, reintentarCarga, cargarNotificaciones])
 
   const { procesandoPedido, manejarCreacionPedido } = useCreateOrder({
     usuario,
@@ -136,8 +147,12 @@ function App() {
       setPanel((actual) =>
         actual === nuevoPanel ? 'ninguno' : nuevoPanel,
       )
+
+      if (nuevoPanel === 'notificaciones') {
+        void cargarNotificaciones()
+      }
     },
-    [],
+    [cargarNotificaciones],
   )
 
   const volverATienda = useCallback(() => {
@@ -160,6 +175,7 @@ function App() {
       <AppHeader
         cantidadCarrito={cantidadCarrito}
         cantidadFavoritos={favoritos.length}
+        cantidadNotificacionesPendientes={pendientes}
         temaOscuro={temaOscuro}
         usuario={usuario}
         vistaAdministracion={vistaAdministracion}
@@ -181,9 +197,19 @@ function App() {
         <FloatingPanel
           panel={panel}
           usuario={usuario}
+          notificaciones={notificaciones}
+          pendientes={pendientes}
+          cargandoNotificaciones={cargandoNotificaciones}
+          errorNotificaciones={errorNotificaciones}
           onCerrar={() => setPanel('ninguno')}
           onAbrirAutenticacion={abrirAutenticacion}
           onAbrirAdministracion={abrirAdministracion}
+          onMarcarNotificacionLeida={(id) => {
+            void marcarComoLeida(id)
+          }}
+          onReintentarNotificaciones={() => {
+            void cargarNotificaciones()
+          }}
         />
       )}
 

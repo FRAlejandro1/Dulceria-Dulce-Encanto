@@ -1,5 +1,13 @@
 ﻿import type { PoolConnection } from 'mysql2/promise';
 
+type ItemNotificacionPedido = {
+  productoNombre: string;
+  varianteNombre: string;
+  sku: string;
+  precio: number;
+  cantidad: number;
+};
+
 export async function notificarPedidoCreado(
   conexion: PoolConnection,
   datos: {
@@ -7,6 +15,7 @@ export async function notificarPedidoCreado(
     numero: string;
     usuarioId: string;
     total: number;
+    items: ItemNotificacionPedido[];
   },
 ): Promise<void> {
   const evento = `order:${datos.pedidoId}:created`;
@@ -27,6 +36,25 @@ export async function notificarPedidoCreado(
       `Tu pedido ${datos.numero} fue recibido y está pendiente de confirmación.`,
     ],
   );
+
+  const detalle = datos.items
+    .map(
+      (item) =>
+        `- ${item.productoNombre} / ${item.varianteNombre} ` +
+        `(SKU: ${item.sku}) x ${item.cantidad} — ` +
+        `$${(item.precio * item.cantidad).toFixed(2)}`,
+    )
+    .join('\n');
+
+  const mensajeAdmin = [
+    `Nuevo pedido: ${datos.numero}`,
+    '',
+    'Detalle del pedido:',
+    detalle,
+    '',
+    `Total: $${datos.total.toFixed(2)}`,
+    'Estado: Pendiente de confirmación',
+  ].join('\n');
 
   await conexion.execute(
     `INSERT IGNORE INTO notifications (
@@ -49,7 +77,7 @@ export async function notificarPedidoCreado(
       datos.pedidoId,
       evento,
       'Nuevo pedido recibido',
-      `El pedido ${datos.numero} fue registrado por un total de ${datos.total.toFixed(2)}.`,
+      mensajeAdmin,
     ],
   );
 }

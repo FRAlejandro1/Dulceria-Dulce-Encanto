@@ -1,4 +1,3 @@
-
 import {
   cleanup,
   fireEvent,
@@ -514,6 +513,40 @@ describe('AdminPanel', () => {
     expect(obtenerProductosAdmin).toHaveBeenCalledTimes(2)
   })
 
+  it('muestra el error cuando falla el reintento de carga', async () => {
+    vi.mocked(obtenerProductosAdmin)
+      .mockRejectedValueOnce(new Error('Error inicial'))
+      .mockRejectedValueOnce(new Error('Error al reintentar'))
+
+    render(<AdminPanel alVolverATienda={vi.fn()} />)
+
+    expect(await screen.findByRole('alert')).toBeTruthy()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Reintentar' }))
+
+    expect(
+      await screen.findByText(/Error al reintentar/),
+    ).toBeTruthy()
+  })
+
+  it('muestra el mensaje predeterminado si falla el reintento con un valor desconocido', async () => {
+    vi.mocked(obtenerProductosAdmin)
+      .mockRejectedValueOnce(new Error('Error inicial'))
+      .mockRejectedValueOnce('fallo desconocido')
+
+    render(<AdminPanel alVolverATienda={vi.fn()} />)
+
+    expect(await screen.findByRole('alert')).toBeTruthy()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Reintentar' }))
+
+    expect(
+      await screen.findByText(
+        /No se pudieron cargar los productos administrativos/,
+      ),
+    ).toBeTruthy()
+  })
+
   it('muestra el mensaje predeterminado cuando el rechazo no es un Error', async () => {
     vi.mocked(obtenerProductosAdmin).mockRejectedValueOnce(
       'fallo desconocido',
@@ -567,6 +600,12 @@ describe('AdminPanel', () => {
       within(detalle).getByRole('textbox', {
         name: 'Descripción del producto',
       }) as HTMLTextAreaElement
+
+    await waitFor(() => {
+      expect(obtenerCampoDescripcion().value).toBe(
+        'Chocolate oscuro',
+      )
+    })
 
     fireEvent.change(obtenerCampoDescripcion(), {
       target: { value: 'Chocolate artesanal' },
