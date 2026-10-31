@@ -67,6 +67,12 @@ const ESTADOS_GRAFICO: EstadoPedidoAdmin[] = [
   'EXPIRADO',
 ]
 
+const ESTADOS_RESUMEN: EstadoPedidoAdmin[] = [
+  'PENDIENTE_CONFIRMACION',
+  'CONFIRMADO',
+  'RECHAZADO',
+  'CANCELADO',
+]
 function generarEtiquetas(
   periodo: PeriodoVentasAdmin,
   anio: number,
@@ -238,6 +244,11 @@ function OrdersDashboard({
 
   return (
     <section className="orders-dashboard" aria-label="Resumen de pedidos">
+
+      {error && (
+        <p className="orders-dashboard__error" role="alert">{error}</p>
+      )}
+
       <div className="orders-dashboard__heading">
         <div className="orders-dashboard__pending">
           <span>Pendientes de confirmación</span>
@@ -245,65 +256,65 @@ function OrdersDashboard({
         </div>
       </div>
 
-      {error && (
-        <p className="orders-dashboard__error" role="alert">{error}</p>
-      )}
-
       <div className="orders-dashboard__overview">
-      <div className="orders-dashboard__grid orders-dashboard__sales-grid">
-        {metricas.map((metrica) => (
-          <article className="orders-dashboard__card" key={metrica.titulo}>
-            <span>{metrica.titulo}</span>
-            <strong className="orders-dashboard__count">
-              {cargando ? '—' : metrica.cantidad}
-            </strong>
-            <strong className="orders-dashboard__sales">
-              {cargando ? 'Cargando...' : metrica.ventas}
-            </strong>
-
-          </article>
-        ))}
-      </div>
-
-      <section className="orders-dashboard__statuses" aria-label="Pedidos por estado">
-        <div className="orders-dashboard__grid orders-dashboard__sales-grid">
-          {(datos?.estados ?? []).map((registro) => {
-            const presentacion = PRESENTACION_ESTADOS[registro.estado]
-            const seleccionado = estadoDashboard === registro.estado
-
-            return (
-              <button
-                type="button"
-                className={`orders-dashboard__card orders-dashboard__status-card orders-dashboard__status-card--${registro.estado.toLowerCase()}${seleccionado ? ' is-active' : ''}`}
-                key={registro.estado}
-                aria-pressed={seleccionado}
-                onClick={() =>
-                  onEstadoDashboardChange(seleccionado ? '' : registro.estado)
-                }
-              >
-                <span className="orders-dashboard__status-label">
-                  <span className="orders-dashboard__status-symbol" aria-hidden="true">
-                    {presentacion.simbolo}
-                  </span>
-                  {presentacion.etiqueta}
-                </span>
+        <section className="orders-dashboard__summary" aria-label="Resumen de actividad">
+          <div className="orders-dashboard__summary-grid">
+            {metricas.map((metrica) => (
+              <article className="orders-dashboard__card orders-dashboard__metric-card" key={metrica.titulo}>
+                <span>{metrica.titulo}</span>
                 <strong className="orders-dashboard__count">
-                  {cargando ? '—' : registro.cantidad}
+                  {cargando ? '—' : metrica.cantidad}
                 </strong>
                 <strong className="orders-dashboard__sales">
-                  {cargando ? 'Cargando...' : dinero(registro.importe)}
+                  {cargando ? 'Cargando...' : metrica.ventas}
                 </strong>
-              </button>
-            )
-          })}
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="orders-dashboard__statuses" aria-label="Pedidos por estado">
+          <div className="orders-dashboard__status-grid">
+            {ESTADOS_RESUMEN.map((estado) => {
+              const registro = (datos?.estados ?? []).find(
+                (item) => item.estado === estado,
+              )
+              const presentacion = PRESENTACION_ESTADOS[estado]
+              const seleccionado = estadoDashboard === estado
+
+              return (
+                <button
+                  type="button"
+                  className={`orders-dashboard__card orders-dashboard__status-card orders-dashboard__status-card--${estado.toLowerCase()}${seleccionado ? ' is-active' : ''}`}
+                  key={estado}
+                  aria-pressed={seleccionado}
+                  onClick={() =>
+                    onEstadoDashboardChange(seleccionado ? '' : estado)
+                  }
+                >
+                  <span className="orders-dashboard__status-label">
+                    <span className="orders-dashboard__status-symbol" aria-hidden="true">
+                      {presentacion.simbolo}
+                    </span>
+                    {presentacion.etiqueta}
+                  </span>
+                  <strong className="orders-dashboard__count">
+                    {cargando ? '—' : registro?.cantidad ?? 0}
+                  </strong>
+                  <strong className="orders-dashboard__sales">
+                    {cargando ? 'Cargando...' : dinero(registro?.importe ?? 0)}
+                  </strong>
+                </button>
+              )
+            })}
+          </div>
           {!cargando && (datos?.estados ?? []).length === 0 && (
-            <p>No hay pedidos para los filtros seleccionados.</p>
+            <p className="orders-dashboard__chart-status">
+              No hay pedidos para los filtros seleccionados.
+            </p>
           )}
-        </div>
-      </section>
-
+        </section>
       </div>
-
       <section className="orders-dashboard__chart">
         <div className="orders-dashboard__chart-heading">
           <div>
@@ -385,6 +396,10 @@ function OrdersDashboard({
               </>
             )}
           </div>
+          <div className="orders-dashboard__chart-summary">
+            <span>{tituloPeriodo}</span>
+            <strong>{totalPedidos} pedidos</strong>
+          </div>
         </div>
 
         {errorVentas && (
@@ -403,10 +418,6 @@ function OrdersDashboard({
           </p>
         ) : (
           <>
-            <div className="orders-dashboard__chart-summary">
-              <span>{tituloPeriodo}</span>
-              <strong>{totalPedidos} pedidos</strong>
-            </div>
 
             <div className="orders-dashboard__chart-legend" aria-label="Leyenda de estados">
               {estadosVisibles.map((estado) => (

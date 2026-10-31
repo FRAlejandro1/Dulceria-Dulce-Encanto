@@ -1,4 +1,4 @@
-﻿import { defineConfig } from 'vitest/config';
+import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   test: {
@@ -20,6 +20,7 @@ export default defineConfig({
         'src/modules/auth/auth.schemas.ts',
         'src/modules/auth/auth.service.ts',
         'src/modules/auth/sessions.repository.ts',
+        'src/modules/auth/login-attempts.repository.ts',
         'src/modules/catalog/catalog.repository.ts',
         'src/modules/catalog/catalog.routes.ts',
         'src/modules/users/users.repository.ts',

@@ -185,7 +185,7 @@
 }
 
 .auth-form__field input[aria-invalid='true'] {
-  border-color: #c94e58;
+  border-color: var(--estado-rechazado-texto);
 }
 
 .auth-form__hint {
@@ -195,7 +195,7 @@
 }
 
 .auth-form__error {
-  color: #c94e58;
+  color: var(--estado-rechazado-texto);
   font-size: 12px;
   line-height: 1.5;
 }
@@ -266,9 +266,9 @@
 }
 
 .auth-message--error {
-  border-color: rgb(201 78 88 / 35%);
-  background: rgb(201 78 88 / 8%);
-  color: #c94e58;
+  border-color: var(--estado-rechazado-borde);
+  background: var(--estado-rechazado-fondo);
+  color: var(--estado-rechazado-texto);
 }
 
 .auth-message--exito {
@@ -324,4 +324,12 @@
   .auth-submit {
     transition: none;
   }
+}
+.app--dark .auth-submit {
+  background: #873449;
+  color: #ffffff;
+}
+
+.app--dark .auth-submit:hover:not(:disabled) {
+  background: #6f293a;
 }

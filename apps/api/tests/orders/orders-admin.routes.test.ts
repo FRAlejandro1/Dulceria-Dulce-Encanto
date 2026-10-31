@@ -96,7 +96,7 @@ describe('orders-admin.routes', () => {
   it('consulta las ventas mensuales', async () => {
     consultarVentasMensualesAdmin.mockResolvedValueOnce([{ mes: 1, total: 100 }]);
 
-    const respuesta = await request(app).get('/admin/orders/sales/monthly?anio=2026');
+    const respuesta = await request(app).get('/admin/orders/sales/monthly?periodo=mes&desde=2026-01-01&hasta=2026-01-31');
 
     expect(respuesta.status).toBe(200);
     expect(respuesta.body.ventasMensuales).toEqual([{ mes: 1, total: 100 }]);

@@ -9,6 +9,9 @@ const {
   registrarAuditoria,
   verificarContrasena,
   ejecutarTransaccion,
+  bloquearYObtenerIntentos,
+  registrarIntentoFallido,
+  reiniciarIntentosFallidos,
 } = vi.hoisted(() => {
   const conexion = {
     beginTransaction: vi.fn(async () => undefined),
@@ -27,6 +30,9 @@ const {
     registrarAuditoria: vi.fn(),
     verificarContrasena: vi.fn(),
     ejecutarTransaccion: vi.fn(),
+    bloquearYObtenerIntentos: vi.fn(),
+    registrarIntentoFallido: vi.fn(),
+    reiniciarIntentosFallidos: vi.fn(),
   };
 });
 
@@ -45,6 +51,12 @@ vi.mock('../../src/modules/auth/sessions.repository.js', () => ({
   crearSesion,
   buscarSesionActivaPorHash,
   revocarSesionPorHash,
+}));
+
+vi.mock('../../src/modules/auth/login-attempts.repository.js', () => ({
+  bloquearYObtenerIntentos,
+  registrarIntentoFallido,
+  reiniciarIntentosFallidos,
 }));
 
 vi.mock('../../src/modules/audit/audit.repository.js', () => ({
@@ -96,6 +108,18 @@ beforeEach(() => {
   revocarSesionPorHash.mockResolvedValue(undefined);
   registrarAuditoria.mockResolvedValue(undefined);
 
+  bloquearYObtenerIntentos.mockResolvedValue({
+    intentosFallidos: 0,
+    segundosBloqueo: 0,
+  });
+
+  registrarIntentoFallido.mockResolvedValue({
+    intentosFallidos: 1,
+    segundosBloqueo: 0,
+  });
+
+  reiniciarIntentosFallidos.mockResolvedValue(undefined);
+
   ejecutarTransaccion.mockImplementation(
     async (operacion: (conexion: typeof conexion) => Promise<unknown>) =>
       operacion(conexion),
@@ -120,15 +144,50 @@ describe('iniciarSesion', () => {
       status: 401,
       mensajePublico: 'Correo o contraseña incorrectos',
     });
+
+    expect(bloquearYObtenerIntentos).not.toHaveBeenCalled();
   });
 
-  it('rechaza una contraseña incorrecta', async () => {
+  it('rechaza una contraseña incorrecta e informa los intentos restantes', async () => {
     verificarContrasena.mockResolvedValue(false);
 
     await expect(iniciarSesion(datosInicio)).rejects.toMatchObject({
       status: 401,
-      mensajePublico: 'Correo o contraseña incorrectos',
+      mensajePublico: 'Contraseña incorrecta. Te quedan 2 de 3 intentos.',
     });
+
+    expect(registrarIntentoFallido).toHaveBeenCalledWith(
+      usuario.id,
+      conexion,
+    );
+  });
+
+  it('bloquea el acceso al alcanzar tres intentos fallidos', async () => {
+    verificarContrasena.mockResolvedValue(false);
+    registrarIntentoFallido.mockResolvedValue({
+      intentosFallidos: 3,
+      segundosBloqueo: 900,
+    });
+
+    await expect(iniciarSesion(datosInicio)).rejects.toMatchObject({
+      status: 429,
+      mensajePublico: 'Acceso bloqueado durante 15 minutos por demasiados intentos.',
+    });
+  });
+
+  it('rechaza el acceso mientras la cuenta está bloqueada', async () => {
+    bloquearYObtenerIntentos.mockResolvedValue({
+      intentosFallidos: 3,
+      segundosBloqueo: 75,
+    });
+
+    await expect(iniciarSesion(datosInicio)).rejects.toMatchObject({
+      status: 429,
+      mensajePublico: 'Acceso bloqueado. Inténtalo de nuevo en 2 minutos.',
+    });
+
+    expect(verificarContrasena).not.toHaveBeenCalled();
+    expect(registrarIntentoFallido).not.toHaveBeenCalled();
   });
 
   it('rechaza un usuario desactivado', async () => {
@@ -141,24 +200,40 @@ describe('iniciarSesion', () => {
       status: 401,
       mensajePublico: 'Correo o contraseña incorrectos',
     });
+
+    expect(bloquearYObtenerIntentos).not.toHaveBeenCalled();
   });
 
-  it('crea una sesión y registra la auditoría al iniciar correctamente', async () => {
+  it('crea una sesión, reinicia intentos y registra la auditoría', async () => {
     const resultado = await iniciarSesion(datosInicio);
 
     expect(buscarUsuarioPorCorreo).toHaveBeenCalledWith(
       'cliente@example.com',
+      conexion,
     );
+
+    expect(bloquearYObtenerIntentos).toHaveBeenCalledWith(
+      usuario.id,
+      conexion,
+    );
+
     expect(verificarContrasena).toHaveBeenCalledWith(
       usuario.hashContrasena,
       datosInicio.contrasena,
     );
+
+    expect(reiniciarIntentosFallidos).toHaveBeenCalledWith(
+      usuario.id,
+      conexion,
+    );
+
     expect(resultado.usuario).toEqual({
       id: usuario.id,
       nombre: usuario.nombre,
       correo: usuario.correo,
       rol: usuario.rol,
     });
+
     expect(resultado.token).toMatch(/^[A-Za-z0-9_-]{43}$/);
     expect(resultado.expiraEn).toBeInstanceOf(Date);
 

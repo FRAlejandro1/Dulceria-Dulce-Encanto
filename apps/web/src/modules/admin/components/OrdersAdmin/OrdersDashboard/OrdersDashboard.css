@@ -87,7 +87,6 @@
 }
 
 .orders-dashboard__sales {
-  color: var(--color-acento);
   font-size: 1.05rem;
 }
 
@@ -226,28 +225,30 @@
 }
 
 .orders-dashboard__chart-legend {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   align-items: center;
-  gap: 10px 18px;
-  margin: 14px 0;
+  gap: var(--spacing-sm) var(--spacing-md);
+  margin: var(--spacing-md) 0;
 }
 
 .orders-dashboard__legend-item {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  color: var(--color-secundario);
-  font-size: 0.78rem;
+  justify-content: center;
+  gap: var(--spacing-xs);
+  min-width: 0;
+  color: var(--color-texto);
+  font-size: var(--font-size-eyebrow);
+  font-weight: var(--font-weight-semibold);
 }
 
 .orders-dashboard__legend-color {
-  width: 10px;
-  height: 10px;
-  flex: 0 0 10px;
-  border-radius: 3px;
+  width: var(--size-chart-indicator);
+  height: var(--size-chart-indicator);
+  flex: 0 0 var(--size-chart-indicator);
+  border-radius: 4px;
 }
-
 .orders-dashboard__chart-note,
 .orders-dashboard__chart-status {
   margin: 0;
@@ -255,7 +256,134 @@
   font-size: 0.82rem;
 }
 
+.orders-dashboard__overview {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.9fr) minmax(0, 1.3fr);
+  align-items: stretch;
+  gap: 18px;
+}
+
+.orders-dashboard__summary {
+  min-width: 0;
+}
+
+.orders-dashboard__summary-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+}
+
+.orders-dashboard__metric-card {
+  display: flex;
+  min-width: 0;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 17px 18px;
+}
+
+.orders-dashboard__metric-card > span {
+  flex: 1;
+  min-width: 0;
+}
+
+.orders-dashboard__metric-card .orders-dashboard__count {
+  font-size: 1.35rem;
+}
+
+.orders-dashboard__metric-card .orders-dashboard__sales {
+  color: var(--color-acento);
+  white-space: nowrap;
+  font-size: 0.95rem;
+}
+
+.orders-dashboard__statuses {
+  min-width: 0;
+}
+
+.orders-dashboard__status-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  height: 100%;
+}
+
+.orders-dashboard__status-card {
+  min-width: 0;
+  min-height: 142px;
+  justify-content: space-between;
+  border: 1px solid var(--color-borde);
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.orders-dashboard__status-card:hover {
+  border-color: currentColor;
+}
+
+.orders-dashboard__status-card:focus-visible {
+  outline: 2px solid var(--color-acento);
+  outline-offset: 3px;
+}
+
+.orders-dashboard__status-card.is-active {
+  box-shadow: 0 0 0 2px currentColor;
+}
+
+.orders-dashboard__status-label {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: inherit;
+  font-size: 0.9rem;
+  font-weight: 750;
+}
+
+.orders-dashboard__status-symbol {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  border-radius: 9px;
+  background: var(--color-superficie);
+  color: inherit;
+  font-size: 1rem;
+}
+
+.orders-dashboard__status-card--pendiente_confirmacion {
+  background: var(--estado-pendiente-fondo);
+  border-color: var(--estado-pendiente-borde);
+  color: var(--estado-pendiente-texto);
+}
+
+.orders-dashboard__status-card--confirmado {
+  background: var(--estado-confirmado-fondo);
+  border-color: var(--estado-confirmado-borde);
+  color: var(--estado-confirmado-texto);
+}
+
+.orders-dashboard__status-card--rechazado {
+  background: var(--estado-rechazado-fondo);
+  border-color: var(--estado-rechazado-borde);
+  color: var(--estado-rechazado-texto);
+}
+
+.orders-dashboard__status-card--cancelado {
+  background: var(--estado-cancelado-fondo);
+  border-color: var(--estado-cancelado-borde);
+  color: var(--estado-cancelado-texto);
+}
 @media (max-width: 760px) {
+  .orders-dashboard__overview {
+    grid-template-columns: 1fr;
+  }
+
+  .orders-dashboard__status-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .orders-dashboard__grid {
     grid-template-columns: 1fr;
   }
@@ -279,5 +407,245 @@
   .orders-dashboard__chart-summary {
     align-items: flex-start;
     flex-direction: column;
+  }
+}
+
+/* Ajustes de simetría del dashboard */
+.orders-dashboard__heading {
+  justify-content: center;
+}
+
+.orders-dashboard__pending {
+  justify-content: center;
+  min-width: min(100%, 360px);
+}
+
+.orders-dashboard__overview {
+  align-items: stretch;
+}
+
+.orders-dashboard__summary-grid {
+  height: 100%;
+  grid-template-rows: repeat(3, minmax(0, 1fr));
+}
+
+.orders-dashboard__metric-card {
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  text-align: center;
+}
+
+.orders-dashboard__metric-card > span {
+  flex: initial;
+}
+
+.orders-dashboard__status-grid {
+  grid-template-rows: repeat(2, minmax(142px, 1fr));
+}
+
+.orders-dashboard__status-card {
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.orders-dashboard__status-label {
+  justify-content: center;
+}
+
+.orders-dashboard__status-card--pendiente_confirmacion.is-active {
+  background: color-mix(in srgb, var(--estado-pendiente-fondo) 82%, var(--estado-pendiente-texto));
+}
+
+.orders-dashboard__status-card--confirmado.is-active {
+  background: color-mix(in srgb, var(--estado-confirmado-fondo) 82%, var(--estado-confirmado-texto));
+}
+
+.orders-dashboard__status-card--rechazado.is-active {
+  background: color-mix(in srgb, var(--estado-rechazado-fondo) 82%, var(--estado-rechazado-texto));
+}
+
+.orders-dashboard__status-card--cancelado.is-active {
+  background: color-mix(in srgb, var(--estado-cancelado-fondo) 82%, var(--estado-cancelado-texto));
+}
+
+@media (max-width: 760px) {
+  .orders-dashboard__summary-grid {
+    grid-template-rows: none;
+  }
+
+  .orders-dashboard__metric-card {
+    min-height: 110px;
+  }
+}
+/* Filtros alineados con el título de ventas */
+.orders-dashboard__chart-heading {
+  align-items: center;
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+
+.orders-dashboard__filters {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+}
+
+.orders-dashboard__year {
+  gap: 7px;
+}
+
+.orders-dashboard__year select,
+.orders-dashboard__year input {
+  min-width: 90px;
+}
+
+@media (max-width: 760px) {
+  .orders-dashboard__chart-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .orders-dashboard__filters {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
+/* Distribución final del encabezado y tarjetas */
+.orders-dashboard__metric-card {
+  gap: 12px;
+  padding: 22px 18px;
+}
+
+.orders-dashboard__metric-card > span {
+  font-size: 1.08rem;
+  font-weight: 850;
+}
+
+.orders-dashboard__metric-card .orders-dashboard__count,
+.orders-dashboard__status-card .orders-dashboard__count {
+  font-size: 1.65rem;
+  font-weight: 900;
+}
+
+.orders-dashboard__metric-card .orders-dashboard__sales,
+.orders-dashboard__status-card .orders-dashboard__sales {
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.orders-dashboard__status-grid {
+  gap: 20px;
+  grid-template-rows: repeat(2, minmax(165px, 1fr));
+}
+
+.orders-dashboard__status-card {
+  min-height: 165px;
+  padding: 24px 18px;
+  gap: 13px;
+}
+
+.orders-dashboard__status-label {
+  font-size: 1rem;
+  font-weight: 850;
+}
+
+.orders-dashboard__chart-heading {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 18px;
+}
+
+.orders-dashboard__chart-heading > div:first-child {
+  justify-self: start;
+}
+
+.orders-dashboard__chart-heading h4 {
+  font-size: 1.2rem;
+  font-weight: 900;
+}
+
+.orders-dashboard__filters {
+  justify-content: center;
+  justify-self: center;
+  gap: 12px 18px;
+}
+
+.orders-dashboard__year > span {
+  font-size: 0.95rem;
+  font-weight: 800;
+}
+
+.orders-dashboard__year select,
+.orders-dashboard__year input {
+  min-height: 40px;
+  font-weight: 750;
+}
+
+.orders-dashboard__pending--chart {
+  justify-self: end;
+  justify-content: center;
+  min-width: 0;
+  padding: 12px 16px;
+  text-align: center;
+}
+
+.orders-dashboard__pending--chart span {
+  font-size: 0.95rem;
+  font-weight: 850;
+}
+
+.orders-dashboard__pending--chart strong {
+  font-size: 1.35rem;
+  font-weight: 900;
+}
+
+@media (max-width: 900px) {
+  .orders-dashboard__chart-heading {
+    grid-template-columns: 1fr;
+    justify-items: stretch;
+  }
+
+  .orders-dashboard__chart-heading > div:first-child,
+  .orders-dashboard__filters,
+  .orders-dashboard__pending--chart {
+    justify-self: stretch;
+  }
+
+  .orders-dashboard__filters {
+    justify-content: center;
+  }
+
+  .orders-dashboard__pending--chart {
+    justify-self: center;
+  }
+}
+
+@media (max-width: 760px) {
+  .orders-dashboard__status-grid {
+    gap: 14px;
+    grid-template-rows: repeat(2, minmax(135px, 1fr));
+  }
+
+  .orders-dashboard__status-card {
+    min-height: 135px;
+    padding: 18px 12px;
+  }
+}
+
+/* Distribución responsive de la leyenda */
+@media (max-width: 900px) {
+  .orders-dashboard__chart-legend {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
+  .orders-dashboard__chart-legend {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
