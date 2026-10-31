@@ -8,7 +8,7 @@ const mocks = vi.hoisted(() => ({
   bloquearPedidoAdmin: vi.fn(),
   listarPedidosAdmin: vi.fn(),
   obtenerItemsInventarioPedido: vi.fn(),
-  obtenerVentasMensualesAdmin: vi.fn(),
+  obtenerVentasPeriodoAdmin: vi.fn(),
   obtenerDetallePedidoAdmin: vi.fn(),
   obtenerDashboardPedidosAdmin: vi.fn(),
   listarClientesPedidosAdmin: vi.fn(),
@@ -28,7 +28,7 @@ vi.mock('../../src/modules/orders/orders-admin.repository.js', () => ({
   bloquearPedidoAdmin: mocks.bloquearPedidoAdmin,
   listarPedidosAdmin: mocks.listarPedidosAdmin,
   obtenerItemsInventarioPedido: mocks.obtenerItemsInventarioPedido,
-  obtenerVentasMensualesAdmin: mocks.obtenerVentasMensualesAdmin,
+  obtenerVentasPeriodoAdmin: mocks.obtenerVentasPeriodoAdmin,
   obtenerDetallePedidoAdmin: mocks.obtenerDetallePedidoAdmin,
   obtenerDashboardPedidosAdmin: mocks.obtenerDashboardPedidosAdmin,
   listarClientesPedidosAdmin: mocks.listarClientesPedidosAdmin,
@@ -77,7 +77,7 @@ beforeEach(() => {
     limite: 20,
   });
 
-  mocks.obtenerVentasMensualesAdmin.mockResolvedValue([]);
+  mocks.obtenerVentasPeriodoAdmin.mockResolvedValue([]);
   mocks.obtenerDetallePedidoAdmin.mockResolvedValue(undefined);
   mocks.obtenerDashboardPedidosAdmin.mockResolvedValue({ estados: [] });
   mocks.listarClientesPedidosAdmin.mockResolvedValue({ clientes: [], totalClientes: 0, pagina: 1, limite: 8 });
@@ -98,7 +98,7 @@ describe('consultarPedidosAdmin', () => {
     });
   });
 
-  it('acepta filtros válidos y convierte paginaciÃ³n', async () => {
+  it('acepta filtros válidos y convierte paginación', async () => {
     await consultarPedidosAdmin({
       estado: 'CONFIRMADO',
       usuarioId: '20',
@@ -143,37 +143,47 @@ describe('consultarPedidosAdmin', () => {
 });
 
 describe('consultarVentasMensualesAdmin', () => {
-  it('consulta ventas para un año vÃ¡lido', async () => {
-    const ventas = [{ mes: 1, cantidadPedidos: 3, ventas: 75 }];
-    mocks.obtenerVentasMensualesAdmin.mockResolvedValueOnce(ventas);
+  const filtros = {
+    periodo: 'mes',
+    desde: '2026-01-01',
+    hasta: '2026-01-31',
+  };
 
-    await expect(consultarVentasMensualesAdmin({ anio: '2026' }))
+  it('consulta ventas con filtros válidos', async () => {
+    const ventas = [{ etiqueta: '10', cantidadPedidos: 3, ventas: 75 }];
+    mocks.obtenerVentasPeriodoAdmin.mockResolvedValueOnce(ventas);
+
+    await expect(consultarVentasMensualesAdmin(filtros))
       .resolves.toEqual(ventas);
 
-    expect(mocks.obtenerVentasMensualesAdmin).toHaveBeenCalledWith(2026);
+    expect(mocks.obtenerVentasPeriodoAdmin).toHaveBeenCalledWith(
+      'mes',
+      '2026-01-01',
+      '2026-01-31',
+    );
   });
 
   it.each([
     {},
-    { anio: 'abc' },
-    { anio: 1999 },
-    { anio: 2101 },
-    { anio: 2026.5 },
+    { ...filtros, periodo: 'trimestre' },
+    { ...filtros, desde: 'fecha-invalida' },
+    { ...filtros, hasta: '2026-02-30' },
+    { ...filtros, desde: '2026-02-01', hasta: '2026-01-01' },
     null,
-  ])('rechaza un año invÃ¡lido: %o', async (entrada) => {
+  ])('rechaza filtros inválidos: %o', async (entrada) => {
     await expect(consultarVentasMensualesAdmin(entrada)).rejects.toMatchObject({
       status: 400,
-      mensajePublico: 'El año solicitado no es válido.',
+      mensajePublico: 'Los filtros de ventas no son válidos.',
     });
 
-    expect(mocks.obtenerVentasMensualesAdmin).not.toHaveBeenCalled();
+    expect(mocks.obtenerVentasPeriodoAdmin).not.toHaveBeenCalled();
   });
 
   it('propaga errores del repositorio', async () => {
-    mocks.obtenerVentasMensualesAdmin.mockRejectedValueOnce(new Error('Error SQL'));
+    mocks.obtenerVentasPeriodoAdmin.mockRejectedValueOnce(new Error('Error SQL'));
 
     await expect(
-      consultarVentasMensualesAdmin({ anio: 2026 }),
+      consultarVentasMensualesAdmin(filtros),
     ).rejects.toThrow('Error SQL');
   });
 });
@@ -320,7 +330,7 @@ describe('cambiarEstadoPedidoAdmin', () => {
     expect(mocks.actualizarEstadoPedidoAdmin).toHaveBeenCalledOnce();
   });
 
-  it('propaga errores de la transacciÃ³n', async () => {
+  it('propaga errores de la transacción', async () => {
     mocks.ejecutarTransaccion.mockRejectedValueOnce(new Error('Error transaccional'));
 
     await expect(

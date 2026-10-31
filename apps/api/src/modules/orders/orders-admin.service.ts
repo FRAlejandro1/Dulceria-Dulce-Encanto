@@ -8,7 +8,7 @@ import {
   actualizarInventarioPedidoAdmin,
   bloquearPedidoAdmin,
   listarPedidosAdmin,
-  obtenerVentasMensualesAdmin,
+  obtenerVentasPeriodoAdmin,
   obtenerItemsInventarioPedido,
   obtenerDetallePedidoAdmin,
   obtenerDashboardPedidosAdmin,
@@ -55,16 +55,25 @@ export async function consultarPedidosAdmin(entrada: unknown) {
 
 export async function consultarVentasMensualesAdmin(entrada: unknown) {
   const schema = z.object({
-    anio: z.coerce.number().int().min(2000).max(2100),
-  });
+    periodo: z.enum(['dia', 'semana', 'mes', 'anio', 'personalizado']),
+    desde: z.iso.date(),
+    hasta: z.iso.date(),
+  }).refine(
+    (filtros) => filtros.desde <= filtros.hasta,
+    { message: 'La fecha inicial no puede superar la fecha final.' },
+  );
 
   const validacion = schema.safeParse(entrada);
 
   if (!validacion.success) {
-    throw new ErrorAplicacion(400, 'El año solicitado no es válido.');
+    throw new ErrorAplicacion(400, 'Los filtros de ventas no son válidos.');
   }
 
-  return obtenerVentasMensualesAdmin(validacion.data.anio);
+  return obtenerVentasPeriodoAdmin(
+    validacion.data.periodo,
+    validacion.data.desde,
+    validacion.data.hasta,
+  );
 }
 export async function cambiarEstadoPedidoAdmin(
   administradorId: string,

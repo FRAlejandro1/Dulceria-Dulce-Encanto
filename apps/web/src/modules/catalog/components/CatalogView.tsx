@@ -208,12 +208,14 @@ export default function CatalogView({
         </div>
       )}
 
-      <p className="demo-notice">
-        Los productos, precios y existencias se consultan desde el catálogo
-        de la tienda. Las imágenes se asignan en el frontend porque la API
-        actual no incluye ese campo. Los favoritos y el carrito son
-        temporales y no se guardan en el servidor.
-      </p>
+      <div className="demo-notice" style={{ textAlign: "center" }}>
+  <strong>Elaborado por:</strong>
+  <p>Kenia Lourdes Solórzano Véliz — Tester y Administrador de Base de Datos</p>
+  <p>María Edith Montes Minaya — Desarrollador Backend</p>
+  <p>Anthony Alejandro Moreira Moreira — Project Manager</p>
+  <p>Gabriela Marilyn Moreira Rosado — Coordinador Técnico y de Producto</p>
+  <p>Viviana Magdalena Moreira Zambrano — Desarrollador Frontend</p>
+</div>
     </section>
   )
 }

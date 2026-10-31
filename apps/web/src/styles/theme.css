@@ -1,4 +1,4 @@
-﻿.app {
+.app {
   --color-fondo: #fbf8f5;
   --color-superficie: #ffffff;
   --color-texto: #3e302c;
@@ -29,6 +29,15 @@
   --estado-expirado-fondo: #f3ecfb;
   --estado-expirado-borde: #d8c7ef;
   --font-size-eyebrow: 0.875rem;
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --spacing-xs: 0.5rem;
+  --spacing-sm: 0.75rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --size-chart-indicator: 0.9rem;
   min-height: 100vh;
   background: var(--color-fondo);
   color: var(--color-texto);
