@@ -29,7 +29,6 @@ import {
 const DURACION_SESION_MS = 8 * 60 * 60 * 1000;
 const PATRON_TOKEN_SESION = /^[A-Za-z0-9_-]{43}$/;
 const MAXIMO_INTENTOS = 3;
-const DURACION_BLOQUEO_SEGUNDOS = 15 * 60;
 
 export interface UsuarioSesion {
   id: string;
